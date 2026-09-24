@@ -43,6 +43,11 @@ const organizationJsonLd = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <script is:inline>
       // 在首次绘制前设置 data-theme，避免切换主题时出现刷新闪烁（FOUC）。
       // 优先级：用户在本站保存过的选择 > 系统颜色偏好。纯内联、同步执行，不依赖外部脚本。
@@ -67,13 +72,6 @@ const organizationJsonLd = {
     />
     <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
     <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
-    <script is:inline type="text/javascript">
-      (function (c, l, a, r, i, t, y) {
-        c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
-        t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i;
-        y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
-      })(window, document, 'clarity', 'script', 'y5nptxq5kc');
-    </script>
     <Analytics />
   </head>
   <body>

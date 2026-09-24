@@ -17,4 +17,10 @@ export const analyticsConfig = {
   // zztools.cc 站点访问统计的检测码（data-sid）。若要沿用与其他站点对比访问量的做法，
   // 需要在 zztools.cc 为 jc8.mom 单独添加站点后取得新的 site id，不能沿用旧站点的。
   zztoolsSiteId: '',
+
+  // Microsoft Clarity 的 Project ID。之前这段脚本曾经硬编码在 BaseLayout.astro 里，
+  // 用的是 rocketjichang.com 那个项目的 ID（y5nptxq5kc）——挪到这个新站时忘了清，
+  // 相当于把新站的数据发去了旧站的 Clarity 后台，属于误接，已移除。需要为 jc8.mom
+  // 单独在 Clarity 建一个项目后，把新 ID 填在这里，留空则不加载脚本。
+  clarityProjectId: '',
 } as const;
