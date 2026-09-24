@@ -1,0 +1,89 @@
+---
+import SourceBadge from './SourceBadge.astro';
+import type { RankingComputation } from '../data/utils/ranking-scoring';
+
+interface Props {
+  entries: RankingComputation[];
+}
+
+const { entries } = Astro.props;
+
+// 本站开始收录该服务商至今的天数——不是"该服务商稳定运营 X 天"，只是
+// "本站已经跟踪这家服务商多久"，两者不能混淆表述。用真实的 createdAt
+// 计算，不是编造数字。
+function daysTracked(trackedSince: string): number {
+  const start = new Date(trackedSince).getTime();
+  const now = Date.now();
+  return Math.max(0, Math.floor((now - start) / (1000 * 60 * 60 * 24)));
+}
+---
+
+{
+  entries.length > 0 ? (
+    <ol class="ranking-list">
+      {entries.map((entry) => (
+        <li class={`ranking-list__item${entry.finalRank === 1 ? ' ranking-list__item--top' : ''}`}>
+          <div class="ranking-list__header">
+            <span class="ranking-list__rank">
+              <span class="sr-only">第</span>
+              {entry.finalRank}
+              <span class="sr-only">名</span>
+            </span>
+            <a
+              href={`/airports/${entry.providerSlug}/`}
+              data-analytics-event="recommendation_card_click"
+              data-provider={entry.providerSlug}
+              data-provider-name={entry.providerName}
+              data-cta-label={`排名第${entry.finalRank}名`}
+            >
+              {entry.providerName}
+            </a>
+            <span class="ranking-list__tracked">本站已跟踪 {daysTracked(entry.trackedSince)} 天</span>
+          </div>
+          <p>{entry.reason}</p>
+          {entry.baseScore !== null && (
+            <dl>
+              <dt>
+                <SourceBadge type="calculated" />
+              </dt>
+              <dd>基础评分：{entry.baseScore.toFixed(1)}（{entry.metricSummary}）</dd>
+
+              {entry.editorialAdjustment !== 0 && (
+                <>
+                  <dt>评分调整</dt>
+                  <dd>
+                    {entry.editorialAdjustment > 0 ? '+' : ''}
+                    {entry.editorialAdjustment} 分
+                    {entry.editorialAdjustmentReason ? `：${entry.editorialAdjustmentReason}` : ''}
+                  </dd>
+                </>
+              )}
+
+              {entry.finalScore !== null && (
+                <>
+                  <dt>最终评分</dt>
+                  <dd>{entry.finalScore.toFixed(1)}</dd>
+                </>
+              )}
+            </dl>
+          )}
+        </li>
+      ))}
+    </ol>
+  ) : (
+    <div class="empty-state">
+      <p class="empty-state__title">当前暂无符合发布条件的服务商</p>
+      <p>数据不足时我们不会为了凑数而给出排名，等有服务商满足发布门槛后会自动出现在这里。</p>
+    </div>
+  )
+}
+
+<style>
+  .ranking-list__tracked {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+    white-space: nowrap;
+  }
+</style>

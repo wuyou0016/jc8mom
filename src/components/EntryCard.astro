@@ -1,0 +1,16 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+  href: string;
+  cta?: string;
+}
+
+const { title, description, href, cta } = Astro.props;
+---
+
+<a href={href} class="entry-card">
+  <span class="entry-card__title">{title}</span>
+  {description && <p class="entry-card__description">{description}</p>}
+  {cta && <span class="entry-card__cta">{cta}</span>}
+</a>

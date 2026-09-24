@@ -1,0 +1,135 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import EntryCard from '../../components/EntryCard.astro';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+import { getArticleHref } from '../../data/utils/article-routing';
+
+const knowledgeArticles = await getCollection(
+  'articles',
+  ({ id, data }) => !isDemoEntry(id) && data.type === 'knowledge',
+);
+
+const difficultyTag: Record<string, string> = {
+  intermediate: '进阶',
+  advanced: '高级',
+};
+
+function toCard(article: (typeof knowledgeArticles)[number]) {
+  const tag = article.data.difficulty ? difficultyTag[article.data.difficulty] : undefined;
+  return {
+    title: article.data.title,
+    description: tag ? `${article.data.description}（${tag}）` : article.data.description,
+    href: getArticleHref(article),
+    cta: '阅读全文',
+  };
+}
+
+// 按主题分组，只在真实存在对应文章时才渲染该主题区域——
+// 不为空分类制造标题或死链。分组依据现有 category 字段，不新增字段。
+const sectionDefs = [
+  {
+    heading: '机场代理基础',
+    intro: '刚接触机场代理，从这里开始了解最基础的概念。',
+    match: (category: string) => category === '入门知识',
+  },
+  {
+    heading: '机场选择',
+    intro: '了解基础概念之后，选择合适的服务商是接下来最实际的问题。',
+    match: (category: string) => category === '机场选择',
+  },
+  {
+    heading: '价格与套餐',
+    intro: '价格、流量、设备数、倍率——这些套餐信息应该怎么理解和比较。',
+    match: (category: string) => category === '价格与套餐',
+  },
+  {
+    heading: '速度与稳定性',
+    intro: '认识速度、延迟、丢包这些指标，以及比较不同机场时容易忽略的前提条件。',
+    match: (category: string) => category === '速度与稳定性',
+  },
+  {
+    heading: '测试与评测',
+    intro: '怎么解读测速数据、怎么判断一篇机场评测是否可信。',
+    match: (category: string) => category === '测试与评测',
+  },
+  {
+    heading: '节点、线路与协议',
+    intro: '这部分内容帮助你理解影响实际使用体验的技术因素，包含入门和进阶内容。',
+    match: (category: string) => category === '节点与线路' || category === '协议',
+  },
+  {
+    heading: '流媒体与 AI 服务',
+    intro: '机场宣传的流媒体解锁、AI 服务可用性该怎么看待，不能只看一句"完美支持"。',
+    match: (category: string) => category === '流媒体与AI服务',
+  },
+];
+
+const sections = sectionDefs
+  .map((def) => ({
+    ...def,
+    cards: knowledgeArticles.filter((article) => def.match(article.data.category)).map(toCard),
+  }))
+  .filter((section) => section.cards.length > 0);
+
+// 防御性兜底：如果未来出现不属于以上任何分组的新分类，仍然要展示出来，
+// 不能让文章因为分类命名变化而从 Hub 页面消失。
+const categorizedIds = new Set(sections.flatMap((section) => section.cards.map((card) => card.href)));
+const otherCards = knowledgeArticles
+  .filter((article) => !categorizedIds.has(getArticleHref(article)))
+  .map(toCard);
+---
+
+<BaseLayout
+  title="机场代理知识｜从基础概念到进阶理解｜机场吧"
+  description="从机场代理基础概念到协议、网络等进阶知识的系统性说明。"
+>
+  <Breadcrumbs items={[{ name: '知识库', href: '/knowledge/' }]} />
+
+  <h1>机场代理知识｜从基础概念到进阶理解</h1>
+  <p>这里是机场吧的机场代理知识体系入口，按主题组织，帮助你从基础概念逐步了解到进阶内容。</p>
+
+  <h2>机场代理是什么</h2>
+  <p>
+    机场代理是中文互联网语境中对代理服务商的俗称，本站的"机场"均指这类服务商，不是现实中的机场、航班或交通信息。
+  </p>
+
+  {
+    sections.map((section) => (
+      <>
+        <h2>{section.heading}</h2>
+        <p>{section.intro}</p>
+        <div class="entry-grid">
+          {section.cards.map((card) => (
+            <EntryCard {...card} />
+          ))}
+        </div>
+      </>
+    ))
+  }
+
+  {
+    otherCards.length > 0 && (
+      <>
+        <h2>其他内容</h2>
+        <div class="entry-grid">
+          {otherCards.map((card) => (
+            <EntryCard {...card} />
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  {
+    knowledgeArticles.length === 0 && <p>目前站内还没有已发布的知识文章。</p>
+  }
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/tutorials/">机场教程</a></li>
+    <li><a href="/troubleshooting/">机场故障排查</a></li>
+    <li><a href="/glossary/">术语表</a></li>
+  </ul>
+</BaseLayout>

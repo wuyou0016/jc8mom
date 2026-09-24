@@ -1,0 +1,94 @@
+---
+import RecommendationPanel from './RecommendationPanel.astro';
+import type { RankingComputation } from '../data/utils/ranking-scoring';
+
+interface Props {
+  entries: RankingComputation[];
+}
+
+const { entries } = Astro.props;
+---
+
+<section class="hero">
+  <div class="hero__space" aria-hidden="true">
+    <img class="hero__vignette asset-dark" src="/assets/background/vignette-dark.svg" alt="" />
+    <img class="hero__vignette asset-light" src="/assets/background/vignette-light.svg" alt="" />
+    <img class="hero__stars asset-dark" src="/assets/background/stars-dark.svg" alt="" />
+    <img class="hero__stars asset-light" src="/assets/background/stars-light.svg" alt="" />
+    <img class="hero__nebula asset-dark" src="/assets/nebula/dark/nebula-main.svg" alt="" />
+    <img class="hero__nebula asset-light" src="/assets/nebula/light/nebula-main.svg" alt="" />
+    <img class="hero__planet hero__planet--ring" src="/assets/planets/planet-ring-large.svg" alt="" />
+    <img class="hero__planet hero__planet--blue" src="/assets/planets/planet-blue-small.svg" alt="" />
+    <div class="hero__rocket-system">
+      <img class="hero__rocket-halo" src="/assets/glow/rocket-halo.svg" alt="" />
+      <img class="hero__trail-wide" src="/assets/rocket/trail-wide.svg" alt="" />
+      <img class="hero__trail-particles" src="/assets/rocket/trail-particles.svg" alt="" />
+      <img class="hero__flame" src="/assets/rocket/flame-core.svg" alt="" />
+      <img class="hero__rocket-main" src="/assets/rocket/rocket-main.svg" alt="" />
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="hero__top">
+      <div>
+        <span class="hero__eyebrow-badge">专业 · 客观 · 持续更新</span>
+        <h1>
+          2026机场推荐与导航
+          <br />
+          <span class="hero__accent">机场吧</span>
+        </h1>
+        <p class="hero__subtitle">
+          收录并评测优质机场代理服务商，提供真实数据、使用教程和故障排查指南，帮助你找到稳定、高速、性价比高的机场服务。
+        </p>
+
+        <ul class="hero__features">
+          <li>
+            <img class="hero__feature-icon" src="/assets/icons/features/shield.svg" alt="" aria-hidden="true" />
+            <span>
+              <strong>真实可靠</strong>
+              多维度数据验证
+            </span>
+          </li>
+          <li>
+            <img class="hero__feature-icon" src="/assets/icons/features/bolt.svg" alt="" aria-hidden="true" />
+            <span>
+              <strong>高速稳定</strong>
+              节点线路实测
+            </span>
+          </li>
+          <li>
+            <img class="hero__feature-icon" src="/assets/icons/features/diamond.svg" alt="" aria-hidden="true" />
+            <span>
+              <strong>性价比高</strong>
+              价格透明公开
+            </span>
+          </li>
+        </ul>
+
+        <div class="hero__ctas">
+          <span class="hero__cta-glow-wrap">
+            <img class="hero__cta-glow asset-dark" src="/assets/glow/dark/cta.svg" alt="" aria-hidden="true" />
+            <img class="hero__cta-glow asset-light" src="/assets/glow/light/cta.svg" alt="" aria-hidden="true" />
+            <a class="button button--primary button--large" href="/rankings/">
+              <img class="button__bg asset-dark" src="/assets/buttons/primary-dark.svg" alt="" aria-hidden="true" />
+              <img class="button__bg asset-light" src="/assets/buttons/primary-light.svg" alt="" aria-hidden="true" />
+              <span class="button__text">查看机场推荐 →</span>
+            </a>
+          </span>
+          <a class="button button--large" href="/airports/">
+            <img class="button__bg asset-dark" src="/assets/buttons/secondary-dark.svg" alt="" aria-hidden="true" />
+            <img class="button__bg asset-light" src="/assets/buttons/secondary-light.svg" alt="" aria-hidden="true" />
+            <span class="button__text">机场导航</span>
+          </a>
+          <a class="button button--large" href="/tutorials/airport-beginner-full-guide/">
+            <img class="button__bg asset-dark" src="/assets/buttons/secondary-dark.svg" alt="" aria-hidden="true" />
+            <img class="button__bg asset-light" src="/assets/buttons/secondary-light.svg" alt="" aria-hidden="true" />
+            <span class="button__text">新手入门</span>
+          </a>
+        </div>
+      </div>
+
+      <RecommendationPanel entries={entries} />
+    </div>
+  </div>
+</section>

@@ -1,0 +1,79 @@
+---
+import type { RankingComputation } from '../data/utils/ranking-scoring';
+import { HOMEPAGE_HIGHLIGHTS } from '../data/homepage-highlights';
+
+interface Props {
+  entries: RankingComputation[];
+}
+
+const { entries } = Astro.props;
+const [top, ...rest] = entries;
+---
+
+{
+  top && (
+    <div class="hero__pick">
+      <div class="hero__pick-content">
+        <div class="hero__pick-head">
+          <span class="hero__pick-label">当前综合推荐</span>
+          <span class="hero__pick-freshness">每周更新</span>
+        </div>
+
+        <div class="hero__pick-top">
+          <img class="hero__pick-rank-icon" src="/assets/badges/top1-medal.svg" alt="" aria-hidden="true" />
+          <span class="hero__pick-name">
+            <a
+              href={`/airports/${top.providerSlug}/`}
+              data-analytics-event="recommendation_card_click"
+              data-provider={top.providerSlug}
+              data-provider-name={top.providerName}
+              data-cta-label="首页Hero综合推荐"
+            >
+              {top.providerName}
+            </a>
+          </span>
+          <span class="rec-tag">推荐</span>
+        </div>
+
+        {HOMEPAGE_HIGHLIGHTS[top.providerId] && (
+          <p class="rating">
+            <span class="rating__score">综合评分 {HOMEPAGE_HIGHLIGHTS[top.providerId]!.score}</span>
+            <span class="rating__stars" aria-hidden="true">
+              {'★'.repeat(HOMEPAGE_HIGHLIGHTS[top.providerId]!.stars)}
+            </span>
+          </p>
+        )}
+
+        <p class="hero__pick-reason">{top.reason}</p>
+
+        {rest.length > 0 && (
+          <ul class="hero__pick-rest">
+            {rest.map((entry) => (
+              <li>
+                <span class="hero__pick-rest-rank">{entry.finalRank}</span>
+                <a
+                  href={`/airports/${entry.providerSlug}/`}
+                  data-analytics-event="recommendation_card_click"
+                  data-provider={entry.providerSlug}
+                  data-provider-name={entry.providerName}
+                  data-cta-label="首页Hero综合推荐次席列表"
+                >
+                  {entry.providerName}
+                </a>
+                {HOMEPAGE_HIGHLIGHTS[entry.providerId] && (
+                  <span class="hero__pick-rest-note">
+                    {HOMEPAGE_HIGHLIGHTS[entry.providerId]!.score} <span aria-hidden="true">★</span>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <a class="hero__pick-cta" href="/rankings/">
+          查看完整推荐榜单 →
+        </a>
+      </div>
+    </div>
+  )
+}

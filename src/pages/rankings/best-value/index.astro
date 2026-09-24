@@ -1,0 +1,212 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import RankingEntries from '../../../components/RankingEntries.astro';
+import { getRankingPageData } from '../../../data/utils/ranking-entries';
+import { resolveCanonicalUrl } from '../../../config/seo';
+
+const { ranking, entries } = await getRankingPageData('best-value');
+
+const title = '性价比机场｜机场代理推荐｜机场吧';
+const description = '从价格、流量、设备数等实际使用条件出发，说明机场吧如何评估机场代理服务商的性价比，而不是单纯比价格。';
+
+// 多来源价格资料对照：直接汇总 providers.json 中已经记录的第三方资料，
+// 不合并、不取平均、不自行选择一个"更准的"数字——冲突的地方原样并列
+// 呈现，来源存在冲突时明确标注，链接到服务商详情页查看完整资料与日期。
+const priceComparison: Array<{ slug: string; name: string; notes: string[] }> = [
+  {
+    slug: 'wuyou-lianjie',
+    name: '无忧链接',
+    notes: [
+      '「机场Clash」资料：约 6.5 元/月起（年付），40GB',
+      '「二毛」资料：舒心链接 12.92 元/月起，100GB',
+      '「机场YYDS」资料：舒心链接 19 元/月，100GB（与站长提供的第三组套餐数字一致）',
+      '三个来源数字均不一致，站长确认准确起步价为 ¥6.5/月起，其余版本可能是活动价、旧套餐或不同档位',
+    ],
+  },
+  {
+    slug: 'weifeng-network',
+    name: '微风网络',
+    notes: [
+      '「机场Clash」资料：约 11 元/月起（年付），100GB',
+      '「机场YYDS」资料：乘风 200GB/27 元/月（与站长提供的套餐资料一致）',
+      '两个来源覆盖的档位不同，暂无法直接比较起步价',
+    ],
+  },
+  {
+    slug: 'firefly',
+    name: 'Firefly',
+    notes: [
+      '「机场Clash」资料：约 8 元/月起（年付），60GB',
+      '「二毛」资料：年付版 96 元/年（折合约 8 元/月），60GB——与「机场Clash」基本一致',
+      '「机场YYDS」资料：与「二毛」记录的月付档位（Lite 25 元/150GB 等）基本一致',
+      '三个来源在年付起步价上互相印证，可信度相对高',
+    ],
+  },
+  {
+    slug: 'lingmao-network',
+    name: '灵猫网络',
+    notes: [
+      '「机场Clash」资料：约 7.1 元/月起（年付），45GB',
+      '「二毛」资料：年付小包 85 元/年（折合约 7.08 元/月），45GB——与「机场Clash」基本吻合',
+      '「二毛」同时指出协议描述存在冲突：文案称「新 SS 协议」，测速截图显示为 Vless',
+    ],
+  },
+  {
+    slug: 'shanyue',
+    name: '闪跃',
+    notes: [
+      '「机场Clash」资料：约 8 元/月起（年付），60GB',
+      '「机场YYDS」资料：年付版 96 元/年（约 8 元/月），60GB——与「机场Clash」一致',
+      '站长提供资料：另有 150GB/月约 24 元的档位，与「机场YYDS」的「闪动」档位数字一致',
+    ],
+  },
+  {
+    slug: 'kuajie-cloud',
+    name: '跨界云',
+    notes: [
+      '「机场Clash」对比表：约 8 元/月起，60GB；但同一网站评测正文又称覆盖 120GB–1500GB，同一来源内部表述不一致',
+      '「二毛」资料：轻云 Lite 20 元/月，120GB 起',
+      '「机场YYDS」资料：第三个价格版本，与前两者均不同',
+      '三个来源差异明显，本站未能判断哪个更准确，购买前建议以官方页面实际展示为准',
+    ],
+  },
+];
+
+// 按预算分档：只用"多来源互相印证、没有明显冲突"的起步价放进档位，
+// 冲突严重（跨界云）或暂无确认起步价（快狸）的服务商不参与分档，
+// 避免把不确定的数字包装成确定的档位归类。
+const budgetTiers = [
+  {
+    label: '¥8 元/月以内',
+    hint: '预算最紧张，先接受较低的流量额度',
+    providers: [
+      { slug: 'wuyou-lianjie', name: '无忧链接', price: '约 ¥6.5/月起（站长确认）' },
+      { slug: 'lingmao-network', name: '灵猫网络', price: '约 ¥7.1/月起（第三方资料，两来源基本吻合）' },
+    ],
+  },
+  {
+    label: '¥8–12 元/月',
+    hint: '本组是第三方资料里密度最高的价位段',
+    providers: [
+      { slug: 'firefly', name: 'Firefly', price: '约 ¥8/月起（第三方资料，多来源一致）' },
+      { slug: 'shanyue', name: '闪跃', price: '约 ¥8/月起（第三方资料，多来源一致）' },
+      { slug: 'weifeng-network', name: '微风网络', price: '约 ¥11/月起（第三方资料，单一来源）' },
+    ],
+  },
+];
+const unTieredProviders = [
+  { slug: 'kuajie-cloud', name: '跨界云', reason: '第三方资料对起步价的描述差异过大（8元/60GB 到 20元/120GB 均有），不归入任何档位' },
+  { slug: 'kuaili', name: '快狸', reason: '暂无可信的起步价资料，不归入任何档位' },
+];
+const webPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: title,
+  description,
+  url: resolveCanonicalUrl('/rankings/best-value/'),
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <Breadcrumbs
+    items={[
+      { name: '机场推荐', href: '/rankings/' },
+      { name: '性价比机场', href: '/rankings/best-value/' },
+    ]}
+  />
+
+  <h1>性价比机场｜机场代理推荐</h1>
+  <p>关注预算和流量单价的用户，可以参考这个榜单的整理思路。</p>
+
+  <h2>"性价比"如何评估</h2>
+  <p>
+    性价比不等于价格最低。本榜单关注在实际使用条件下，服务成本与可用资源之间的平衡，而不是单纯按照价格排序。具体会参考官方公开的价格、流量额度、设备数等信息；如果有本站测试数据，也会一并参考实际使用表现；此外，服务商的编辑结论中提到的"适合人群"也会作为参考依据之一。流量额度和倍率规则如何影响实际可用量，可以参考<a href="/knowledge/what-is-airport-traffic-and-multiplier/">机场流量是什么意思</a>。
+  </p>
+  <p>
+    需要说明的是：价格、流量这些信息目前在数据结构里是自由文本（比如"12元/月"这种写法），暂时无法被程序自动解析成可以互相比较的数字，所以本榜单<strong>目前没有客观计算出的基础评分</strong>——排名基于以上信息整理得出，页面会公开具体理由，不会伪装成算法算出来的客观结果。
+  </p>
+
+  <h2>性价比怎么算：一个你可以自己套用的公式</h2>
+  <p>
+    与其纠结"哪家更划算"这种模糊判断，不如自己动手算一遍单位流量成本，公式分四步，任何套餐都能套用：
+  </p>
+  <ol>
+    <li><strong>算单位流量成本</strong>：月付套餐用「月费 ÷ 月流量」；年付套餐用「年费 ÷（12 × 折算月流量）」。比如某套餐月付 17 元、110GB，单价约 0.15 元/GB。</li>
+    <li><strong>做倍率修正</strong>：如果常用节点是 2 倍率，实际成本要在第一步基础上乘以 2——倍率信息未核实前，第一步算出的只是"下限"，实际成本可能更高，具体可以看<a href="/knowledge/what-is-airport-traffic-and-multiplier/">机场流量是什么意思</a>。</li>
+    <li><strong>算可用性折价</strong>：晚高峰频繁掉线、节点经常不可用，等于这部分流量"白付了"——没有实测数据支撑时，建议先用月付小额验证，而不是直接年付大额。</li>
+    <li><strong>核对条款</strong>：设备数限制、是否限速、退款政策、续费价格是否和首购价一致——这四项里任何一项有问题，前三步算出的数字都没有意义。</li>
+  </ol>
+  <p>
+    需要提醒的是：本站目前收录的服务商，价格与流量数据大多来自<strong>相互冲突的第三方资料</strong>（见下方对照表），本站不会为了套用这个公式而自行选择一个"更准的"数字去计算，具体请你在拿到官方当前套餐页面的准确数字后自己代入计算。
+  </p>
+
+  <h2>按预算选择</h2>
+  <p>
+    不想自己套公式算的话，可以先按预算档位缩小范围——这里只列入"多来源资料互相印证、没有明显冲突"的起步价，价格标注为"约"，具体以官方当前页面为准。
+  </p>
+  {
+    budgetTiers.map((tier) => (
+      <div class="table-wrap">
+        <h3>{tier.label}</h3>
+        <p>{tier.hint}</p>
+        <ul>
+          {tier.providers.map((p) => (
+            <li><a href={`/airports/${p.slug}/`}>{p.name}</a>：{p.price}</li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+  <p>
+    <strong>暂不分档的服务商：</strong>
+    {unTieredProviders.map((p, i) => (
+      <>
+        {i > 0 && '；'}
+        <a href={`/airports/${p.slug}/`}>{p.name}</a>——{p.reason}
+      </>
+    ))}
+  </p>
+
+  <h2>各服务商价格资料对照（第三方来源，如有冲突原样并列）</h2>
+  <p>以下逐条来自本站在各服务商详情页记录的第三方资料，不合并、不取平均。想看完整资料、来源链接与获取日期，点击服务商名称查看详情页。</p>
+  {
+    priceComparison.map((row) => (
+      <div class="table-wrap">
+        <h3><a href={`/airports/${row.slug}/`}>{row.name}</a></h3>
+        <ul>
+          {row.notes.map((note) => <li>{note}</li>)}
+        </ul>
+      </div>
+    ))
+  }
+
+  <h2>当前收录情况</h2>
+  <RankingEntries entries={entries} />
+  {ranking && <p>方法论版本：{ranking.data.scoringVersion}，数据快照时间：{ranking.data.snapshotAt.toISOString().slice(0, 10)}。</p>}
+
+  <h2>常见问题</h2>
+
+  <p><strong>性价比机场榜是怎么算出来的？</strong></p>
+  <p>目前价格、流量等信息还是自由文本格式，无法自动计算出客观评分，因此榜单排名基于官方信息、第三方资料和编辑判断整理得出，页面会公开具体理由。</p>
+
+  <p><strong>无忧链接为什么排第一？</strong></p>
+  <p>这是本站本期的推荐结果，理由会直接显示在对应条目下方。这不代表它是"客观测试测出来性价比最高"，而是基于现有公开信息做出的推荐判断。</p>
+
+  <p><strong>以后这个榜单会有客观评分吗？</strong></p>
+  <p>如果未来价格、流量等字段支持结构化数值，具备了可以自动计算的条件，会更新方法论说明；在此之前，本站不会用文字近似值硬凑出一个"评分"。</p>
+
+  <p><strong>为什么不同来源给的价格数字差这么多？</strong></p>
+  <p>常见原因包括：不同来源获取资料的时间不同（服务商可能调整过套餐或搞活动）、部分资料可能是活动价或老套餐、也不排除个别第三方资料本身有误。本站不会替你猜哪个是对的，而是把冲突的数字并列展示，最终请以官方当前页面为准。</p>
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/rankings/">查看机场推荐</a></li>
+    <li><a href="/rankings/most-stable/">查看最稳定的机场</a></li>
+    <li><a href="/airports/">查看机场导航</a></li>
+    <li><a href="/knowledge/airport-value-for-money-explained/">机场性价比怎么看</a></li>
+    <li><a href="/reviews/">了解评测方法</a></li>
+  </ul>
+
+  <script type="application/ld+json" set:html={JSON.stringify(webPageJsonLd)} />
+</BaseLayout>

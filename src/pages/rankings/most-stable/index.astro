@@ -1,0 +1,247 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import RankingEntries from '../../../components/RankingEntries.astro';
+import { getRankingPageData } from '../../../data/utils/ranking-entries';
+import { getPublishableProviders } from '../../../data/utils/provider-publish-gate';
+import { isDemoEntry } from '../../../data/utils/demo-filter';
+import { MIN_STABILITY_SPAN_DAYS, MIN_STABILITY_TEST_RECORDS } from '../../../data/utils/ranking-constants';
+import { resolveCanonicalUrl } from '../../../config/seo';
+
+const { ranking, entries } = await getRankingPageData('most-stable');
+
+const title = '2026最稳定的机场推荐｜稳定性榜单与评选方法｜机场吧';
+
+// 逐 Provider 的真实进度披露：不满足门槛不代表"没有数据"，而是数据具体
+// 差多少——这里直接统计真实 TestRecord，不编造、不预估未来会有多少条。
+const [allTests, publishableProviders] = await Promise.all([
+  getCollection('tests', ({ id }) => !isDemoEntry(id)),
+  getPublishableProviders(),
+]);
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const today = Date.now();
+
+const evidenceProgress = publishableProviders
+  .map((provider) => {
+    const relevant = allTests
+      .filter(
+        (test) =>
+          test.data.providerId.id === provider.id &&
+          (test.data.results?.stabilityScore !== undefined || test.data.results?.packetLossPercent !== undefined),
+      )
+      .sort((a, b) => a.data.date.getTime() - b.data.date.getTime());
+
+    const dates = relevant.map((test) => test.data.date.getTime());
+    const spanDays = dates.length >= 2 ? Math.round((dates[dates.length - 1]! - dates[0]!) / MS_PER_DAY) : 0;
+    const meetsRecordCount = relevant.length >= MIN_STABILITY_TEST_RECORDS;
+    const meetsSpan = spanDays >= MIN_STABILITY_SPAN_DAYS;
+    const qualifies = meetsRecordCount && meetsSpan;
+    // 观察天数：从第一条有效证据记录到今天，用于 7/14/30 天观察进度展示，
+    // 不是"该服务商已稳定运营 X 天"，只是"本站已经开始跟踪多久"。
+    const daysObserved = dates.length > 0 ? Math.floor((today - dates[0]!) / MS_PER_DAY) : 0;
+
+    let gap: string;
+    if (qualifies) {
+      gap = '已满足最低门槛';
+    } else if (relevant.length === 0) {
+      gap = `还差至少 ${MIN_STABILITY_TEST_RECORDS} 条测试记录`;
+    } else if (!meetsRecordCount) {
+      gap = `还差至少 ${MIN_STABILITY_TEST_RECORDS - relevant.length} 条测试记录`;
+    } else {
+      gap = `记录数已够，时间跨度还差 ${MIN_STABILITY_SPAN_DAYS - spanDays} 天`;
+    }
+
+    const lossValues = relevant
+      .map((test) => test.data.results?.packetLossPercent)
+      .filter((value): value is number => value !== undefined);
+    const lossSummary =
+      lossValues.length > 0
+        ? {
+            count: lossValues.length,
+            avg: lossValues.reduce((sum, value) => sum + value, 0) / lossValues.length,
+            min: Math.min(...lossValues),
+            max: Math.max(...lossValues),
+          }
+        : undefined;
+
+    return {
+      name: provider.data.name,
+      slug: provider.data.slug,
+      count: relevant.length,
+      spanDays,
+      daysObserved,
+      gap,
+      qualifies,
+      lossSummary,
+      firstDate: relevant.length > 0 ? relevant[0]!.data.date.toISOString().slice(0, 10) : undefined,
+      lastDate: relevant.length > 0 ? relevant[relevant.length - 1]!.data.date.toISOString().slice(0, 10) : undefined,
+      records: relevant.map((test) => ({
+        date: test.data.date.toISOString().slice(0, 10),
+        packetLossPercent: test.data.results?.packetLossPercent,
+        stabilityScore: test.data.results?.stabilityScore,
+      })),
+    };
+  })
+  .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+const qualifiedRows = evidenceProgress.filter((row) => row.qualifies);
+const unqualifiedRows = evidenceProgress.filter((row) => !row.qualifies);
+const leader = [...qualifiedRows]
+  .filter((row) => row.lossSummary)
+  .sort((a, b) => a.lossSummary!.avg - b.lossSummary!.avg)[0];
+const allDates = qualifiedRows.flatMap((row) => [row.firstDate, row.lastDate]).filter((d): d is string => Boolean(d)).sort();
+const description =
+  leader && allDates.length > 0
+    ? `机场吧稳定性榜单：基于本站 ${allDates[0]} 至 ${allDates[allDates.length - 1]} 的丢包率实测，${qualifiedRows.length} 家机场已达标排名，${leader.name}平均丢包率 ${leader.lossSummary!.avg.toFixed(1)}% 居首；附评选门槛与各家测试进度。`
+    : '说明机场吧如何基于本站测试数据评估机场代理服务商的稳定性，以及稳定性榜单当前的收录情况。';
+const webPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: title,
+  description,
+  url: resolveCanonicalUrl('/rankings/most-stable/'),
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <Breadcrumbs
+    items={[
+      { name: '机场推荐', href: '/rankings/' },
+      { name: '最稳定的机场', href: '/rankings/most-stable/' },
+    ]}
+  />
+
+  <h1>2026最稳定的机场推荐</h1>
+  <p>更看重长期稳定使用的用户，可以参考这个稳定性榜单的整理思路。</p>
+
+  <h2>稳定性如何判断</h2>
+  <p>
+    稳定性优先看的是本站测试记录中的丢包率（packetLossPercent）——这是原始测试观测值，不是加工过的评分。如果暂时没有丢包率数据，会退回参考"稳定性评分"这一已加工指标，其具体计算方法目前尚未在数据结构中明确定义，页面会注明使用的是哪一种依据。延迟、丢包率和稳定性具体是什么关系，可以参考<a href="/knowledge/airport-stability-latency-packet-loss/">机场稳定性怎么看</a>；丢包率具体多少算高，可以参考<a href="/knowledge/airport-packet-loss-explained/">机场丢包率多少算高</a>。
+  </p>
+  <p>
+    一个服务商要出现在这个榜单里，至少需要满足：<strong>至少 2 条本站真实测试记录</strong>，且这些记录的<strong>时间跨度不少于 7 天</strong>。单次测试、或者时间跨度太短的测试，不足以证明"稳定"这种需要跨时间观察才能确认的属性，因此不会被纳入计算。如果一个服务商完全没有相关测试数据，或者测试记录不满足这两个最低门槛，就不会出现在这个稳定性榜单中——我们不会仅凭官方信息或宣传语给出稳定性结论。
+  </p>
+
+  <h2>什么决定了机场稳定不稳定</h2>
+  <p>
+    丢包率、延迟这些数字是"结果"，背后有具体的技术原因——入口线路是否有冗余、晚高峰带宽是否留有余量、节点故障后是人工处理还是自动切换、域名是否容易被干扰等。这些因素普通用户很难从外部直接验证，但了解它们有助于判断"为什么这家稳、那家不稳"，详见
+    <a href="/knowledge/why-airport-is-unstable/">机场为什么会不稳定？入口冗余、晚高峰负载与故障自愈怎么影响体验</a>。本站不会对这些内部机制做无法验证的断言，只通过持续积累的真实测试数据间接反映结果。
+  </p>
+
+  <h2>当前收录情况</h2>
+  <RankingEntries entries={entries} />
+  {ranking && <p>方法论版本：{ranking.data.scoringVersion}，数据快照时间：{ranking.data.snapshotAt.toISOString().slice(0, 10)}。</p>}
+  <p>
+    <strong>测试口径：</strong>目前收录的丢包率记录均由站长使用 MiaoKo 自定义测速工具，在珠海联通网络环境下测得，只覆盖丢包率这一项指标，不包含速度、延迟，测试时也未说明具体协议。不同地区、运营商、时段和协议下结果可能不同，因此榜单反映的是"本站这套测试环境下的相对表现"，不等于你自己网络下的实际体验。
+  </p>
+
+  <h2>各服务商目前的真实进度</h2>
+  <p>
+    下表是本站已收录服务商各自积累的真实测试记录数量，逐条统计，不做预估。达标门槛是
+    <strong>至少 {MIN_STABILITY_TEST_RECORDS} 条记录、时间跨度 {MIN_STABILITY_SPAN_DAYS} 天以上</strong>——达标只是"能否上榜"的最低门槛，之后我们会继续按 7 天、14 天、30 天的观察周期持续积累数据，跨度越长，稳定性判断的可信度越高。
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>服务商</th>
+          <th>本站测试记录数</th>
+          <th>已有记录时间跨度</th>
+          <th>已观察天数</th>
+          <th>距离达标</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          evidenceProgress.map((row) => (
+            <tr>
+              <td><a href={`/airports/${row.slug}/`}>{row.name}</a></td>
+              <td>{row.count}</td>
+              <td>{row.count >= 2 ? `${row.spanDays} 天` : '—'}</td>
+              <td>
+                {row.daysObserved} 天
+                {row.daysObserved < 7 && '（未满 7 天）'}
+                {row.daysObserved >= 7 && row.daysObserved < 14 && '（已过 7 天观察点）'}
+                {row.daysObserved >= 14 && row.daysObserved < 30 && '（已过 14 天观察点）'}
+                {row.daysObserved >= 30 && '（已过 30 天观察点）'}
+              </td>
+              <td>{row.qualifies ? '已满足最低门槛' : row.gap}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2>本站测试历史记录</h2>
+  <p>
+    逐条列出每个服务商每次测试的原始日期与数值，方便你自己核对数据来源；每张表上方给出的平均值、最低值和最高值是对这些原始记录的简单汇总，榜单排名使用的就是其中的平均丢包率。
+  </p>
+  {
+    evidenceProgress
+      .filter((row) => row.records.length > 0)
+      .map((row) => (
+        <div class="table-wrap">
+          <h3>{row.name}</h3>
+          {row.lossSummary && (
+            <p>
+              共 {row.lossSummary.count} 次丢包率测试（{row.firstDate} 至 {row.lastDate}），平均 {row.lossSummary.avg.toFixed(1)}%，最低 {row.lossSummary.min.toFixed(1)}%，最高 {row.lossSummary.max.toFixed(1)}%。
+            </p>
+          )}
+          <table>
+            <thead>
+              <tr>
+                <th>测试日期</th>
+                <th>丢包率</th>
+                <th>稳定性评分（加工指标）</th>
+              </tr>
+            </thead>
+            <tbody>
+              {row.records.map((record) => (
+                <tr>
+                  <td>{record.date}</td>
+                  <td>{record.packetLossPercent !== undefined ? `${record.packetLossPercent}%` : '—'}</td>
+                  <td>{record.stabilityScore !== undefined ? record.stabilityScore : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))
+  }
+
+  <h2>常见问题</h2>
+
+  <p><strong>这个榜单现在是怎么排的？</strong></p>
+  <p>
+    目前有 {qualifiedRows.length} 家服务商已满足门槛（至少 {MIN_STABILITY_TEST_RECORDS} 条记录、时间跨度 {MIN_STABILITY_SPAN_DAYS} 天以上），按各自本站测试记录的平均丢包率换算基础评分，平均丢包率越低排名越靠前。{unqualifiedRows.length > 0 && `${unqualifiedRows.map((row) => row.name).join('、')}目前还没有积累到足够的本站测试记录，因此暂未列入排名。`}我们不会为了让榜单看起来更丰富而放宽门槛，也不会用官方宣传或第三方测速数据代替本站实测。上表列出了每家服务商的测试进度。
+  </p>
+
+  <p><strong>榜单会更新吗？</strong></p>
+  <p>会。排名分数随本站测试记录的新增而重新计算，页面上标注的"数据快照时间"是最近一次整理榜单的日期。这是一个持续更新的过程，不是一次性生成的结果。</p>
+
+  <p><strong>这个榜单的排名会调整吗？</strong></p>
+  <p>会，调整时会明确标注。如果某个条目的最终排名经过编辑整理确定，页面会公开具体理由，不会包装成客观测试的结果；如果排名完全来自计算，会标注为"客观计算"。</p>
+
+  <p><strong>丢包率和稳定性评分有什么区别？</strong></p>
+  <p>丢包率是测试时直接观测到的原始数据；稳定性评分是在没有丢包率数据时才会使用的退回指标，属于已加工数据，页面会明确标注当前用的是哪一种，不会混淆呈现。</p>
+
+  <p><strong>为什么用丢包率，不直接看服务商自己宣传的"稳定不掉线"？</strong></p>
+  <p>"稳定""不掉线"是宣传用语，不是可验证的客观数据。丢包率是可以重复测量、可以跨时间对比的具体指标，这也是为什么本榜单只认本站实测数据，不采用官方宣传或未经核实的第三方测速截图。</p>
+
+  <p><strong>我自己也想测，应该怎么测？</strong></p>
+  <p>可以参考<a href="/tutorials/how-to-test-airport-speed/">机场测速怎么做</a>，其中也提到了晚高峰测试的注意事项；想了解丢包率具体反映什么、多少算高，可以看<a href="/knowledge/airport-packet-loss-explained/">机场丢包率多少算高</a>。</p>
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/rankings/">查看机场推荐</a></li>
+    <li><a href="/rankings/best-value/">查看性价比机场</a></li>
+    <li><a href="/airports/">查看机场导航</a></li>
+    <li><a href="/knowledge/why-airport-is-unstable/">机场为什么会不稳定</a></li>
+    <li><a href="/reviews/">了解评测方法</a></li>
+  </ul>
+
+  <script type="application/ld+json" set:html={JSON.stringify(webPageJsonLd)} />
+</BaseLayout>

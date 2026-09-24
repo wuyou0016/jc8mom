@@ -1,0 +1,141 @@
+---
+import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+import { getPublishableProviders } from '../../data/utils/provider-publish-gate';
+import { resolveCanonicalUrl } from '../../config/seo';
+
+export async function getStaticPaths() {
+  const [comparisons, publishableProviders] = await Promise.all([
+    getCollection('comparisons', ({ id }) => !isDemoEntry(id)),
+    getPublishableProviders(),
+  ]);
+
+  // 只有 A、B 两个 Provider 都通过发布门槛，对比页面才生成，避免链接到未发布的 Provider。
+  return comparisons
+    .map((comparison) => {
+      const providerA = publishableProviders.find((p) => p.id === comparison.data.providerA.id);
+      const providerB = publishableProviders.find((p) => p.id === comparison.data.providerB.id);
+      if (!providerA || !providerB) return null;
+      return { params: { slug: comparison.id }, props: { comparison, providerA, providerB } };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+}
+
+interface Props {
+  comparison: CollectionEntry<'comparisons'>;
+  providerA: CollectionEntry<'providers'>;
+  providerB: CollectionEntry<'providers'>;
+}
+
+const { comparison, providerA, providerB } = Astro.props;
+const snapshotA = comparison.data.dataSnapshot.providerA;
+const snapshotB = comparison.data.dataSnapshot.providerB;
+
+function formatDate(value: Date | string): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return date.toISOString().slice(0, 10);
+}
+
+const updatedAtLabel = formatDate(comparison.data.updatedAt);
+const capturedAtLabel = formatDate(comparison.data.dataSnapshot.capturedAt);
+
+const criterionLabel: Record<string, string> = {
+  pricing: '价格',
+  stability: '稳定性',
+  speed: '速度',
+  latency: '延迟',
+  protocols: '协议',
+};
+
+const rows = [
+  { label: '价格', a: snapshotA.pricing, b: snapshotB.pricing },
+  { label: '速度', a: snapshotA.speed, b: snapshotB.speed },
+  { label: '稳定性', a: snapshotA.stability, b: snapshotB.stability },
+  { label: '延迟', a: snapshotA.latency, b: snapshotB.latency },
+  { label: '协议', a: snapshotA.protocols?.join('、'), b: snapshotB.protocols?.join('、') },
+].filter((row) => row.a || row.b);
+
+const title = `${snapshotA.name} vs ${snapshotB.name}：机场代理对比｜机场吧`;
+const description = `对比 ${snapshotA.name} 与 ${snapshotB.name} 在${comparison.data.comparisonCriteria
+  .map((key) => criterionLabel[key] ?? key)
+  .join('、')}等方面目前可查的公开资料，并说明信息来源与差异。`;
+const canonicalUrl = resolveCanonicalUrl(`/comparisons/${comparison.id}/`);
+
+const webPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: title,
+  description,
+  url: canonicalUrl,
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <Breadcrumbs
+    items={[
+      { name: '机场对比', href: '/comparisons/' },
+      { name: `${snapshotA.name} vs ${snapshotB.name}`, href: `/comparisons/${comparison.id}/` },
+    ]}
+  />
+
+  <h1>{snapshotA.name} vs {snapshotB.name}：机场代理对比</h1>
+  <p class="article-meta">数据快照时间：{capturedAtLabel} · 更新于 {updatedAtLabel}</p>
+  <p>
+    以下对比基于公开的第三方资料整理，不是本站实测结果，具体来源和差异说明可以分别查看
+    <a href={`/airports/${providerA.data.slug}/`}>{snapshotA.name} 的服务商页面</a>
+    与 <a href={`/airports/${providerB.data.slug}/`}>{snapshotB.name} 的服务商页面</a>。
+  </p>
+
+  <h2>对比维度</h2>
+  {
+    rows.length > 0 ? (
+      <table>
+        <thead>
+          <tr>
+            <th>维度</th>
+            <th>{snapshotA.name}</th>
+            <th>{snapshotB.name}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr>
+              <td>{row.label}</td>
+              <td>{row.a ?? '暂无资料'}</td>
+              <td>{row.b ?? '暂无资料'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <p>目前没有可展示的对比数据。</p>
+    )
+  }
+
+  <h2>编辑分析</h2>
+  <div class="prose">
+    <p>{comparison.data.editorialAnalysis}</p>
+  </div>
+
+  <h2>结论</h2>
+  <div class="prose">
+    <p>{comparison.data.conclusion}</p>
+  </div>
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li>
+      <a href={`/airports/${providerA.data.slug}/`}>查看 {snapshotA.name} 详情</a>
+    </li>
+    <li>
+      <a href={`/airports/${providerB.data.slug}/`}>查看 {snapshotB.name} 详情</a>
+    </li>
+    <li><a href="/comparisons/">查看更多机场对比</a></li>
+    <li><a href="/rankings/">查看机场推荐</a></li>
+  </ul>
+
+  <script type="application/ld+json" set:html={JSON.stringify(webPageJsonLd)} />
+</BaseLayout>

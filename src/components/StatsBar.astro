@@ -1,0 +1,42 @@
+---
+interface Props {
+  providerCount: number;
+  rankingCount: number;
+  articleCount: number;
+}
+
+const { providerCount, rankingCount, articleCount } = Astro.props;
+
+// "45+" 这类展示格式：向下取整到 5 的倍数，避免每加一篇文章就要改这里的文案，
+// 同时保证数字不会比真实数量更大（不会虚报）。
+const articleDisplay = `${Math.floor(articleCount / 5) * 5}+`;
+
+const stats = [
+  { icon: '/assets/icons/stats/providers.svg', number: String(providerCount), lineA: '已收录优质服务商', lineB: '真实评测' },
+  { icon: '/assets/icons/stats/rankings.svg', number: String(rankingCount), lineA: '推荐榜单', lineB: '多维度评测' },
+  { icon: '/assets/icons/stats/articles.svg', number: articleDisplay, lineA: '原创文章', lineB: '持续更新' },
+  // 用户数没有真实统计数据源（本站无账号/用户追踪系统），按站长决定原样保留展示，
+  // 不参与上面几项的真实数据计算。
+  { icon: '/assets/icons/stats/sources.svg', number: '10,000+', lineA: '用户信赖', lineB: '共同选择' },
+];
+---
+
+<div class="stat-strip">
+  {
+    stats.map((stat) => (
+      <div class="stat-strip__item">
+        <span class="stat-strip__icon" aria-hidden="true">
+          <img src={stat.icon} alt="" width="28" height="28" />
+        </span>
+        <span class="stat-strip__text">
+          <span class="stat-strip__number">{stat.number}</span>
+          <span class="stat-strip__label">
+            {stat.lineA}
+            <br />
+            {stat.lineB}
+          </span>
+        </span>
+      </div>
+    ))
+  }
+</div>

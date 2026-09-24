@@ -1,0 +1,54 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+import { getPublishableProviders } from '../../data/utils/provider-publish-gate';
+
+const [allComparisons, publishableProviders] = await Promise.all([
+  getCollection('comparisons', ({ id }) => !isDemoEntry(id)),
+  getPublishableProviders(),
+]);
+
+// 只列出 A、B 两个 Provider 都通过发布门槛的对比，避免链接到未生成的 /comparisons/[slug]/ 页面。
+const publishableIds = new Set(publishableProviders.map((p) => p.id));
+const comparisons = allComparisons.filter(
+  (comparison) => publishableIds.has(comparison.data.providerA.id) && publishableIds.has(comparison.data.providerB.id),
+);
+---
+
+<BaseLayout
+  title="机场对比｜比较不同机场代理服务商｜机场吧"
+  description="从稳定性、速度、延迟、套餐等维度比较不同机场代理服务商，帮助你做出选择。"
+>
+  <Breadcrumbs items={[{ name: '机场对比', href: '/comparisons/' }]} />
+
+  <h1>机场对比｜比较不同机场代理服务商</h1>
+  <p>拿不定主意选哪个服务商时，可以直接把两个机场代理服务商放在一起比较。</p>
+
+  <h2>可以比较什么</h2>
+  <p>稳定性、速度、延迟、套餐、适用人群、协议与客户端支持。</p>
+
+  <h2>已发布的对比</h2>
+  {
+    comparisons.length > 0 ? (
+      <ul class="quick-links">
+        {comparisons.map((comparison) => (
+          <li>
+            <a href={`/comparisons/${comparison.id}/`}>
+              {comparison.data.dataSnapshot.providerA.name} vs {comparison.data.dataSnapshot.providerB.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p>当前暂无已发布对比。</p>
+    )
+  }
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/airports/">查看机场导航</a></li>
+    <li><a href="/rankings/">查看机场推荐</a></li>
+  </ul>
+</BaseLayout>

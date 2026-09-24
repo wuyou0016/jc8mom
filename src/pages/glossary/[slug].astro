@@ -1,0 +1,117 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { getArticleHref } from '../../data/utils/article-routing';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+import { resolveCanonicalUrl } from '../../config/seo';
+
+export async function getStaticPaths() {
+  const terms = await getCollection('glossary', ({ id }) => !isDemoEntry(id));
+  return terms.map((term) => ({ params: { slug: term.id }, props: { term } }));
+}
+
+interface Props {
+  term: CollectionEntry<'glossary'>;
+}
+
+const { term } = Astro.props;
+const { Content } = await render(term);
+
+// 相关术语 / 相关文章都只来自 frontmatter 里显式声明的引用关系，
+// 不做关键词自动匹配，避免制造不准确的关联或死链。
+const [allTerms, allArticles] = await Promise.all([
+  getCollection('glossary', ({ id }) => !isDemoEntry(id)),
+  getCollection('articles', ({ id }) => !isDemoEntry(id)),
+]);
+
+const relatedTerms = (term.data.relatedTerms ?? [])
+  .map((slug) => allTerms.find((entry) => entry.id === slug))
+  .filter((entry): entry is CollectionEntry<'glossary'> => Boolean(entry));
+
+const relatedArticles = (term.data.relatedArticles ?? [])
+  .map((slug) => allArticles.find((entry) => entry.id === slug))
+  .filter((entry): entry is CollectionEntry<'articles'> => Boolean(entry));
+
+function formatDate(value: Date | string): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return date.toISOString().slice(0, 10);
+}
+
+const updatedAtLabel = formatDate(term.data.updatedAt);
+const title = `${term.data.term}是什么？｜机场代理术语表｜机场吧`;
+const canonicalUrl = resolveCanonicalUrl(`/glossary/${term.id}/`);
+
+const definedTermJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'DefinedTerm',
+  name: term.data.term,
+  description: term.data.definition,
+  url: canonicalUrl,
+  inDefinedTermSet: resolveCanonicalUrl('/glossary/'),
+};
+---
+
+<BaseLayout title={title} description={term.data.definition}>
+  <Breadcrumbs
+    items={[
+      { name: '术语表', href: '/glossary/' },
+      { name: term.data.term, href: `/glossary/${term.id}/` },
+    ]}
+  />
+
+  <h1>{term.data.term}</h1>
+  <p class="article-meta">
+    更新于 {updatedAtLabel}
+    {term.data.aliases && term.data.aliases.length > 0 && <span>· 也叫：{term.data.aliases.join('、')}</span>}
+  </p>
+
+  <div class="prose">
+    <p>
+      <strong>{term.data.definition}</strong>
+    </p>
+
+    {term.data.extendedExplanation && <p>{term.data.extendedExplanation}</p>}
+
+    <Content />
+
+    {
+      relatedTerms.length > 0 && (
+        <>
+          <h2>相关术语</h2>
+          <ul class="quick-links">
+            {relatedTerms.map((related) => (
+              <li>
+                <a href={`/glossary/${related.id}/`}>{related.data.term}</a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+
+    {
+      relatedArticles.length > 0 && (
+        <>
+          <h2>相关内容</h2>
+          <ul class="quick-links">
+            {relatedArticles.map((related) => (
+              <li>
+                <a href={getArticleHref(related)}>{related.data.title}</a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+
+    <p>你可能还想看：</p>
+    <ul class="quick-links">
+      <li><a href="/glossary/">查看更多术语</a></li>
+      <li><a href="/knowledge/">机场代理知识</a></li>
+    </ul>
+  </div>
+
+  <script type="application/ld+json" set:html={JSON.stringify(definedTermJsonLd)} />
+</BaseLayout>

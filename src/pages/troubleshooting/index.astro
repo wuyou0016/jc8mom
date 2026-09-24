@@ -1,0 +1,93 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import EntryCard from '../../components/EntryCard.astro';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+import { getArticleHref } from '../../data/utils/article-routing';
+
+const troubleshootingArticles = await getCollection(
+  'articles',
+  ({ id, data }) => !isDemoEntry(id) && data.type === 'troubleshooting',
+);
+
+function toCard(article: (typeof troubleshootingArticles)[number]) {
+  return {
+    title: article.data.title,
+    description: article.data.description,
+    href: getArticleHref(article),
+    cta: '阅读全文',
+  };
+}
+
+// 按 symptom 字段的关键词归类，而不是逐篇手工指定——分类会随内容自然扩展，
+// 不为当前还没有文章的问题类型制造死链。
+const sectionDefs = [
+  { heading: '连接问题', keyword: '连接' },
+  { heading: '速度问题', keyword: '速度' },
+  { heading: '节点问题', keyword: '节点' },
+  { heading: '订阅问题', keyword: '订阅' },
+];
+
+const sections = sectionDefs
+  .map((def) => ({
+    heading: def.heading,
+    cards: troubleshootingArticles
+      .filter((article) => article.data.symptom?.includes(def.keyword))
+      .map(toCard),
+  }))
+  .filter((section) => section.cards.length > 0);
+
+const categorizedIds = new Set(sections.flatMap((section) => section.cards.map((card) => card.href)));
+const otherCards = troubleshootingArticles
+  .filter((article) => !categorizedIds.has(getArticleHref(article)))
+  .map(toCard);
+---
+
+<BaseLayout
+  title="机场故障排查｜连接、速度与节点问题｜机场吧"
+  description="连接失败、速度异常、延迟过高等机场代理常见问题的排查思路。"
+>
+  <Breadcrumbs items={[{ name: '故障排查', href: '/troubleshooting/' }]} />
+
+  <h1>机场故障排查｜连接、速度与节点问题</h1>
+  <p>
+    这里收录机场代理使用过程中常见问题的排查思路，按问题类型分类展示——目前已发布的内容集中在连接问题，速度、节点、订阅相关的排查文章会陆续补充。
+  </p>
+
+  {
+    sections.map((section) => (
+      <>
+        <h2>{section.heading}</h2>
+        <div class="entry-grid">
+          {section.cards.map((card) => (
+            <EntryCard {...card} />
+          ))}
+        </div>
+      </>
+    ))
+  }
+
+  {
+    otherCards.length > 0 && (
+      <>
+        <h2>其他问题</h2>
+        <div class="entry-grid">
+          {otherCards.map((card) => (
+            <EntryCard {...card} />
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  {
+    troubleshootingArticles.length === 0 && <p>目前站内还没有已发布的排障文章。</p>
+  }
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/knowledge/">了解机场代理知识</a></li>
+    <li><a href="/tutorials/">机场教程</a></li>
+  </ul>
+</BaseLayout>

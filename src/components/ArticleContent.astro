@@ -1,0 +1,131 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { siteConfig } from '../config/site';
+import { resolveCanonicalUrl } from '../config/seo';
+import { estimateReadingTimeMinutes } from '../data/utils/reading-time';
+import { getArticleHref } from '../data/utils/article-routing';
+import { isDemoEntry } from '../data/utils/demo-filter';
+
+interface Props {
+  article: CollectionEntry<'articles'>;
+  hubLabel: string;
+  hubHref: string;
+}
+
+const { article, hubLabel, hubHref } = Astro.props;
+const { Content, headings } = await render(article);
+
+// 侧边目录只取 H2，避免层级太细；条目太少（含只有 1-2 个 H2）时没有导航价值，不显示。
+const tocHeadings = headings.filter((heading) => heading.depth === 2);
+const showToc = tocHeadings.length >= 3;
+
+const difficultyLabel: Record<NonNullable<CollectionEntry<'articles'>['data']['difficulty']>, string> = {
+  beginner: '入门',
+  intermediate: '进阶',
+  advanced: '高级',
+};
+
+const readingTime = estimateReadingTimeMinutes(article.body ?? '');
+
+// 相关内容只来自 relatedTopics 这条真实关系字段，且只在 articles 集合内解析，
+// 不猜测、不按关键词自动匹配（术语表页面尚未逐条建立，避免制造死链）。
+const allArticles = await getCollection('articles', ({ id }) => !isDemoEntry(id));
+const relatedArticles = (article.data.relatedTopics ?? [])
+  .map((topicId) => allArticles.find((entry) => entry.id === topicId))
+  .filter((entry): entry is CollectionEntry<'articles'> => Boolean(entry));
+
+function formatDate(value: Date | string): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return date.toISOString().slice(0, 10);
+}
+
+const publishedAtLabel = formatDate(article.data.publishedAt);
+const updatedAtLabel = formatDate(article.data.updatedAt);
+const showUpdatedAt = updatedAtLabel !== publishedAtLabel;
+
+const metaParts = [`分类：${article.data.category}`];
+if (article.data.difficulty) metaParts.push(`难度：${difficultyLabel[article.data.difficulty]}`);
+metaParts.push(`发布于 ${publishedAtLabel}`);
+if (showUpdatedAt) metaParts.push(`更新于 ${updatedAtLabel}`);
+metaParts.push(`阅读约 ${readingTime} 分钟`);
+
+const title = `${article.data.title}｜机场吧`;
+const canonicalUrl = resolveCanonicalUrl(getArticleHref(article));
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: article.data.title,
+  description: article.data.description,
+  datePublished: publishedAtLabel,
+  dateModified: updatedAtLabel,
+  author: { '@type': 'Organization', name: siteConfig.author.name },
+  url: canonicalUrl,
+};
+---
+
+<BaseLayout
+  title={title}
+  description={article.data.description}
+  ogType="article"
+  publishedTime={publishedAtLabel}
+  modifiedTime={updatedAtLabel}
+>
+  <Breadcrumbs
+    items={[
+      { name: hubLabel, href: hubHref },
+      { name: article.data.title, href: getArticleHref(article) },
+    ]}
+  />
+
+  <h1>{article.data.title}</h1>
+  <p class="article-meta">{metaParts.join(' · ')}</p>
+
+  <div class="article-layout">
+    <div class="prose">
+      <Content />
+
+      {
+        relatedArticles.length > 0 && (
+          <>
+            <h2>相关内容</h2>
+            <ul class="quick-links">
+              {relatedArticles.map((related) => (
+                <li>
+                  <a href={getArticleHref(related)}>{related.data.title}</a>
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      }
+
+      <p>你可能还想看：</p>
+      <ul class="quick-links">
+        <li><a href="/knowledge/">机场代理知识</a></li>
+        <li><a href="/tutorials/">机场教程</a></li>
+        <li><a href="/troubleshooting/">故障排查</a></li>
+      </ul>
+    </div>
+
+    {
+      showToc && (
+        <nav class="article-toc" aria-label="文章目录">
+          <p class="article-toc__label">本文目录</p>
+          <ol>
+            {tocHeadings.map((heading) => (
+              <li>
+                <a href={`#${heading.slug}`}>{heading.text}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )
+    }
+  </div>
+
+  <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
+</BaseLayout>

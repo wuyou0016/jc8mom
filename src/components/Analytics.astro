@@ -1,0 +1,112 @@
+---
+import { analyticsConfig } from '../config/analytics';
+
+const { siteId, ga4MeasurementId, cloudflareBeaconToken, zztoolsSiteId } = analyticsConfig;
+---
+
+{
+  ga4MeasurementId && (
+    <>
+      <script async src={`https://www.googletagmanager.com/gtag/js?id=${ga4MeasurementId}`}></script>
+      <script define:vars={{ ga4MeasurementId, siteId }}>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          dataLayer.push(arguments);
+        }
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', ga4MeasurementId, { site_id: siteId });
+      </script>
+    </>
+  )
+}
+
+{
+  cloudflareBeaconToken && (
+    <script
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon={JSON.stringify({ token: cloudflareBeaconToken })}
+    />
+  )
+}
+
+{
+  zztoolsSiteId && (
+    <script defer src="//zztools.cc/stat/assets/js/tk.js" data-sid={zztoolsSiteId}></script>
+  )
+}
+
+<script define:vars={{ siteId }}>
+  // 通用推荐位/CTA 点击追踪：不绑定某一个具体统计平台，只要页面上有
+  // data-analytics-event 属性的元素被点击，就统一上报"站点 + 页面 + 品牌 + CTA"
+  // 四个维度。以后新增统计工具，只需要在这一处再 push 一次，不用改各页面模板。
+  function report(eventName, el) {
+    const payload = {
+      site: siteId,
+      page_path: location.pathname,
+      provider_slug: el.getAttribute('data-provider') || '',
+      provider_name: el.getAttribute('data-provider-name') || '',
+      cta_label: el.getAttribute('data-cta-label') || (el.textContent || '').trim().slice(0, 60),
+      outbound_url: el.tagName === 'A' ? el.href : '',
+    };
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', eventName, payload);
+    }
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event: eventName, ...payload });
+  }
+
+  document.addEventListener(
+    'click',
+    function (event) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const taggedLink = target.closest('[data-analytics-event]');
+      if (taggedLink) {
+        report(taggedLink.getAttribute('data-analytics-event'), taggedLink);
+        return;
+      }
+
+      // 兜底：没有专门打标签的外链（比如 Footer 友情链接、联系方式）也统一记一次
+      // "outbound_link_click"，避免每加一个外链都要手动补属性。
+      const anchor = target.closest('a[href]');
+      if (!anchor) return;
+      let url;
+      try {
+        url = new URL(anchor.getAttribute('href'), location.href);
+      } catch (e) {
+        return;
+      }
+      if (url.hostname === location.hostname) return;
+      report('outbound_link_click', anchor);
+    },
+    true,
+  );
+
+  // 推荐位曝光追踪：用 IntersectionObserver，元素进入视口达到 50% 才算一次曝光，
+  // 每个元素在这次页面浏览里只报一次，避免上下滚动反复触发。开销很小，不影响加载性能。
+  if ('IntersectionObserver' in window) {
+    const seen = new WeakSet();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || seen.has(entry.target)) continue;
+          seen.add(entry.target);
+          report('recommendation_card_impression', entry.target);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.5 },
+    );
+    const observeAll = function () {
+      document.querySelectorAll('[data-provider]').forEach((el) => observer.observe(el));
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', observeAll, { once: true });
+    } else {
+      observeAll();
+    }
+  }
+</script>

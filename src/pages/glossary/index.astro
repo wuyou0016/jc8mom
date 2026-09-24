@@ -1,0 +1,38 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+
+const terms = await getCollection('glossary', ({ id }) => !isDemoEntry(id));
+---
+
+<BaseLayout
+  title="机场代理术语表｜常见概念与名词解释｜机场吧"
+  description="机场代理相关术语与名词的解释，帮助你看懂技术概念。"
+>
+  <Breadcrumbs items={[{ name: '术语表', href: '/glossary/' }]} />
+
+  <h1>机场代理术语表｜常见概念与名词解释</h1>
+  <p>这里收录机场代理相关的常见术语与名词解释。</p>
+
+  <h2>已收录的术语</h2>
+  {
+    terms.length > 0 ? (
+      <ul class="quick-links">
+        {terms.map((term) => (
+          <li>
+            <a href={`/glossary/${term.id}/`}>{term.data.term}</a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p>当前暂无已发布术语。</p>
+    )
+  }
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/knowledge/">了解机场代理知识</a></li>
+  </ul>
+</BaseLayout>

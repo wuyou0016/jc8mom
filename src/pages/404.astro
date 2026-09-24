@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const quickLinks = [
+  { label: '机场导航', href: '/airports/' },
+  { label: '机场推荐', href: '/rankings/' },
+  { label: '机场评测', href: '/reviews/' },
+  { label: '教程', href: '/tutorials/' },
+];
+---
+
+<BaseLayout title="页面未找到" description="抱歉，你访问的页面不存在或已被移动。" robots={{ index: false, follow: true }}>
+  <h1>页面未找到</h1>
+  <p>抱歉，你访问的页面不存在，或者已经被移动。</p>
+  <p><a href="/">返回首页</a></p>
+  <nav aria-label="常用入口">
+    <ul>
+      {
+        quickLinks.map((item) => (
+          <li>
+            <a href={item.href}>{item.label}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</BaseLayout>

@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import RankingEntries from '../../../components/RankingEntries.astro';
+import { getRankingPageData } from '../../../data/utils/ranking-entries';
+import { resolveCanonicalUrl } from '../../../config/seo';
+
+const { ranking, entries } = await getRankingPageData('for-beginners');
+
+const title = '适合新手的机场推荐｜机场代理入门｜机场吧';
+const description = '介绍新手选择机场代理时可以关注的客户端、配置难度等因素，以及适合新手的机场代理推荐思路。';
+const webPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: title,
+  description,
+  url: resolveCanonicalUrl('/rankings/for-beginners/'),
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <Breadcrumbs
+    items={[
+      { name: '机场推荐', href: '/rankings/' },
+      { name: '适合新手的机场', href: '/rankings/for-beginners/' },
+    ]}
+  />
+
+  <h1>适合新手的机场推荐｜机场代理入门</h1>
+  <p>刚接触机场代理、还不确定怎么选的用户，可以从这个榜单入手。</p>
+
+  <h2>新手选择时可以关注什么</h2>
+  <p>
+    新手通常更需要客户端是否支持常用平台、是否有清晰的支持渠道，而不是最低的价格或最多的线路。这里的评分是"基础信息覆盖评分"——只衡量官方是否公开了客户端支持、支持渠道这两项信息是否齐全，不代表实际新手体验、配置难度或客服质量，这些当前都没有对应的真实数据支撑。编辑结论中标注的"适合人群"是否包含新手，属于编辑观点，会作为补充参考展示，但不计入这个覆盖评分。我们不会给出没有数据支持的结论，例如具体的客服响应时间。
+  </p>
+
+  <h2>当前收录情况</h2>
+  <RankingEntries entries={entries} />
+  {ranking && <p>方法论版本：{ranking.data.scoringVersion}，数据快照时间：{ranking.data.snapshotAt.toISOString().slice(0, 10)}。</p>}
+
+  <h2>常见问题</h2>
+
+  <p><strong>为什么现在这个榜单是空的？</strong></p>
+  <p>
+    这个榜单只统计官方是否公开了客户端支持、支持渠道这两项结构化信息。目前本站收录的服务商官方入口普遍设有注册墙或图形验证码，本站未创建账户、未完成验证码，因此暂时无法核实这两项信息是否公开——不满足这个最低门槛就不会出现在榜单里。我们不会用第三方资料里提到的"支持 Clash、Shadowrocket 等客户端"之类的描述替代官方口径凑数。
+  </p>
+
+  <p><strong>没有榜单结果，新手现在能看什么？</strong></p>
+  <p>可以先看上面"新手选择时可以关注什么"，了解应该关注的具体方向；也可以直接查看<a href="/airports/">机场导航</a>里各服务商的详情页，自行比对客户端支持与支持渠道等信息。</p>
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/rankings/">查看机场推荐</a></li>
+    <li><a href="/airports/">查看机场导航</a></li>
+    <li><a href="/knowledge/">了解机场代理知识</a></li>
+    <li><a href="/tutorials/">机场教程</a></li>
+  </ul>
+
+  <script type="application/ld+json" set:html={JSON.stringify(webPageJsonLd)} />
+</BaseLayout>

@@ -1,0 +1,62 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+import { getPublishableProviders } from '../../data/utils/provider-publish-gate';
+
+const [reviews, publishableProviders] = await Promise.all([
+  getCollection('reviews', ({ id }) => !isDemoEntry(id)),
+  getPublishableProviders(),
+]);
+
+// 只展示"评测所属 Provider 确实已经通过发布门槛、真正有页面"的评测，
+// 避免链接到未生成的 /airports/[slug]/ 页面。
+const publishedReviews = reviews
+  .map((review) => ({
+    review,
+    provider: publishableProviders.find((provider) => provider.id === review.data.providerId.id),
+  }))
+  .filter((entry): entry is { review: (typeof reviews)[number]; provider: (typeof publishableProviders)[number] } =>
+    Boolean(entry.provider),
+  );
+---
+
+<BaseLayout
+  title="机场评测｜评测方法与服务商评测｜机场吧"
+  description="了解机场吧如何测试和评价机场代理服务商，包括数据来源与测试环境说明。"
+>
+  <Breadcrumbs items={[{ name: '机场评测', href: '/reviews/' }]} />
+
+  <h1>机场评测｜评测方法与服务商评测</h1>
+  <p>这个页面说明我们如何评价一个机场代理服务商；具体某个服务商的评测内容发布在该服务商自己的页面上。</p>
+
+  <h2>我们如何评价一个机场代理服务商</h2>
+  <p>评测内容会区分三类信息：</p>
+  <ul>
+    <li>官方公开信息——来自服务商自己公开的资料</li>
+    <li>本站测试——附带测试日期与测试环境说明</li>
+    <li>编辑分析——基于以上信息形成的判断</li>
+  </ul>
+  <p>三类信息会分别标注来源与时间，不会混在一起呈现。如何判断一篇机场评测本身是否可信，可以参考<a href="/knowledge/airport-review-credibility/">机场评测怎么看</a>。</p>
+
+  <h2>已发布评测</h2>
+  {
+    publishedReviews.length > 0 ? (
+      <ul class="quick-links">
+        {publishedReviews.map(({ review, provider }) => (
+          <li>
+            <a href={`/airports/${provider.data.slug}/`}>{review.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p>当前暂无已发布的服务商评测。发布后，评测内容会呈现在对应服务商的页面上，而不是单独的评测页面地址。</p>
+    )
+  }
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/airports/">查看机场导航</a></li>
+  </ul>
+</BaseLayout>

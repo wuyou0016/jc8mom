@@ -1,0 +1,86 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import EntryCard from '../../components/EntryCard.astro';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+import { getArticleHref } from '../../data/utils/article-routing';
+
+const tutorials = await getCollection(
+  'articles',
+  ({ id, data }) => !isDemoEntry(id) && data.type === 'tutorial',
+);
+
+function toCard(article: (typeof tutorials)[number]) {
+  return {
+    title: article.data.title,
+    description: article.data.description,
+    href: getArticleHref(article),
+    cta: '阅读全文',
+  };
+}
+
+// 只在真实存在对应文章时才渲染该分类，不为空分类制造死链。
+const sectionDefs = [
+  { heading: '机场客户端', match: (category: string) => category === '机场客户端' },
+  { heading: '订阅与配置', match: (category: string) => category === '订阅与配置' },
+];
+
+const sections = sectionDefs
+  .map((def) => ({
+    ...def,
+    cards: tutorials.filter((article) => def.match(article.data.category)).map(toCard),
+  }))
+  .filter((section) => section.cards.length > 0);
+
+const categorizedIds = new Set(sections.flatMap((section) => section.cards.map((card) => card.href)));
+const otherCards = tutorials.filter((article) => !categorizedIds.has(getArticleHref(article))).map(toCard);
+---
+
+<BaseLayout
+  title="机场教程｜从入门到进阶的使用指南｜机场吧"
+  description="机场代理相关的客户端配置、节点与线路设置等操作型教程分类。"
+>
+  <Breadcrumbs items={[{ name: '教程', href: '/tutorials/' }]} />
+
+  <h1>机场教程｜从入门到进阶的使用指南</h1>
+  <p>
+    这里是"操作型教程"的入口——和知识库偏向解释概念不同，教程更侧重具体怎么操作，围绕客户端安装、订阅导入等实际步骤展开。
+  </p>
+
+  {
+    sections.map((section) => (
+      <>
+        <h2>{section.heading}</h2>
+        <div class="entry-grid">
+          {section.cards.map((card) => (
+            <EntryCard {...card} />
+          ))}
+        </div>
+      </>
+    ))
+  }
+
+  {
+    otherCards.length > 0 && (
+      <>
+        <h2>其他操作教程</h2>
+        <div class="entry-grid">
+          {otherCards.map((card) => (
+            <EntryCard {...card} />
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  {
+    tutorials.length === 0 && <p>目前站内还没有已发布的教程文章。</p>
+  }
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/knowledge/">了解机场代理知识</a></li>
+    <li><a href="/troubleshooting/">机场故障排查</a></li>
+  </ul>
+</BaseLayout>

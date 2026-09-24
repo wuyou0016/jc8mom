@@ -1,0 +1,412 @@
+---
+import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import SourceBadge from '../../components/SourceBadge.astro';
+import { isDemoEntry } from '../../data/utils/demo-filter';
+import { isProviderPublishable } from '../../data/utils/provider-publish-gate';
+import { getArticleHref } from '../../data/utils/article-routing';
+import { resolveCanonicalUrl } from '../../config/seo';
+
+export async function getStaticPaths() {
+  const [providers, tests] = await Promise.all([
+    getCollection('providers', ({ id }) => !isDemoEntry(id)),
+    getCollection('tests', ({ id }) => !isDemoEntry(id)),
+  ]);
+
+  // 发布门槛在这里、也只在这里判断：不达标的 Provider 根本不会有 params，
+  // 不会生成 URL，不依赖后续用 noindex 补救。
+  const publishable = providers.filter((provider) => isProviderPublishable(provider, tests));
+
+  return publishable.map((provider) => ({
+    params: { slug: provider.data.slug },
+    props: { provider },
+  }));
+}
+
+interface Props {
+  provider: CollectionEntry<'providers'>;
+}
+
+const { provider } = Astro.props;
+
+const [tests, rankings, comparisons, reviews, articles] = await Promise.all([
+  getCollection('tests', ({ id }) => !isDemoEntry(id)),
+  getCollection('rankings', ({ id }) => !isDemoEntry(id)),
+  getCollection('comparisons', ({ id }) => !isDemoEntry(id)),
+  getCollection('reviews', ({ id }) => !isDemoEntry(id)),
+  getCollection('articles', ({ id }) => !isDemoEntry(id)),
+]);
+
+const providerTests = tests.filter((test) => test.data.providerId.id === provider.id);
+const providerRankings = rankings.filter((ranking) =>
+  ranking.data.entries.some((entry) => entry.providerId.id === provider.id),
+);
+const providerComparisons = comparisons.filter(
+  (comparison) => comparison.data.providerA.id === provider.id || comparison.data.providerB.id === provider.id,
+);
+const providerReview = reviews.find((review) => review.data.providerId.id === provider.id);
+
+// 相关内容只来自 Review.relatedTopics 这条真实存在的关系字段，
+// 不按关键词/分类自动匹配，避免制造虚假关联。
+const relatedArticles = (providerReview?.data.relatedTopics ?? [])
+  .map((topicId) => articles.find((article) => article.id === topicId))
+  .filter((article): article is CollectionEntry<'articles'> => Boolean(article));
+
+// 品牌资料整理文章的文件名固定遵循 "{provider slug}-review" 这个约定
+// （见 src/content/articles/），直接按约定查找，不依赖 reviews collection
+// （目前没有任何真实 Provider 在 reviews 里有条目）。
+const brandArticle = articles.find((article) => article.id === `${provider.data.slug}-review`);
+
+const statusLabel: Record<CollectionEntry<'providers'>['data']['status'], string> = {
+  active: '正常运营',
+  inactive: '暂停服务',
+  discontinued: '已停止服务',
+  watch: '观察中',
+};
+
+const hasEditorial =
+  provider.data.editorial.summary.trim().length > 0 &&
+  (provider.data.editorial.pros.length > 0 || provider.data.editorial.cons.length > 0);
+
+function formatDate(value: string | Date): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return date.toISOString().slice(0, 10);
+}
+
+// Description 基于该 Provider 真实存在的数据动态生成，不写死统一模板，
+// 也不堆砌"机场推荐/性价比机场"等核心关键词——那些由 /rankings/ 系列页面承载。
+// 只拼接真实存在的内容，没有的字段不写，不编造价格/速度/协议等具体断言。
+const uniqueThirdPartySources = new Set(
+  (provider.data.thirdPartyNotes ?? []).map((note) => note.source.split('（')[0].trim()),
+);
+const descriptionExtras: string[] = [];
+if (providerTests.length > 0) descriptionExtras.push('本站实测数据');
+if (uniqueThirdPartySources.size > 0) {
+  descriptionExtras.push(`来自 ${uniqueThirdPartySources.size} 个第三方来源的公开资料`);
+}
+if (hasEditorial) descriptionExtras.push('编辑分析');
+const description = `${provider.data.name}的机场代理服务商信息${
+  descriptionExtras.length > 0 ? `，整理了${descriptionExtras.join('、')}` : ''
+}。`;
+
+const title = `${provider.data.name}怎么样？机场代理评测与使用指南｜机场吧`;
+const h1 = `${provider.data.name}｜机场代理服务商评测`;
+
+const canonicalUrl = resolveCanonicalUrl(`/airports/${provider.data.slug}/`);
+
+// dateModified 取"真正影响页面可见内容"的最新时间，不用构建时间代替。
+const lastUpdatedCandidates = [provider.data.updatedAt, ...(providerReview ? [providerReview.data.updatedAt] : [])];
+const lastUpdated = new Date(Math.max(...lastUpdatedCandidates.map((d) => new Date(d).getTime())));
+
+const webPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: title,
+  description,
+  url: canonicalUrl,
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <Breadcrumbs
+    items={[
+      { name: '机场导航', href: '/airports/' },
+      { name: provider.data.name, href: `/airports/${provider.data.slug}/` },
+    ]}
+  />
+
+  <h1>{h1}</h1>
+
+  <dl class="quick-facts">
+    <div>
+      <dt>状态</dt>
+      <dd class={`status-dot status-dot--${provider.data.status}`}>{statusLabel[provider.data.status]}</dd>
+    </div>
+    {provider.data.vendor.traffic && (
+      <div>
+        <dt>流量</dt>
+        <dd>{provider.data.vendor.traffic}</dd>
+      </div>
+    )}
+    {provider.data.vendor.protocols && provider.data.vendor.protocols.length > 0 && (
+      <div>
+        <dt>协议</dt>
+        <dd>{provider.data.vendor.protocols.join('、')}</dd>
+      </div>
+    )}
+    <div>
+      <dt>信息最后核实时间</dt>
+      <dd>{formatDate(provider.data.lastVerified)}</dd>
+    </div>
+  </dl>
+
+  <h2>官方公开信息</h2>
+  <div class="info-panel info-panel--vendor">
+    <SourceBadge type="vendor" />
+    <p>{provider.data.vendor.description}</p>
+    <ul>
+      <li>
+        官网：
+        <a
+          href={provider.data.vendor.officialWebsite}
+          rel="nofollow noopener"
+          target="_blank"
+          class="outbound-link"
+          data-analytics-event="outbound_cta_click"
+          data-provider={provider.data.slug}
+          data-provider-name={provider.data.name}
+          data-cta-label="访问官网"
+        >
+          访问 {provider.data.name} 官网<span class="outbound-link__icon" aria-hidden="true">↗</span>
+        </a>
+      </li>
+      {provider.data.vendor.traffic && <li>流量：官方信息显示为 {provider.data.vendor.traffic}</li>}
+      {provider.data.vendor.devices && <li>设备数：官方信息显示为 {provider.data.vendor.devices} 台</li>}
+      {provider.data.vendor.protocols && provider.data.vendor.protocols.length > 0 && (
+        <li>协议：官方信息显示支持 {provider.data.vendor.protocols.join('、')}</li>
+      )}
+      {((provider.data.vendor.routes?.length ?? 0) > 0 || (provider.data.vendor.regions?.length ?? 0) > 0) && (
+        <li>
+          线路/地区：官方信息显示为{' '}
+          {[...(provider.data.vendor.routes ?? []), ...(provider.data.vendor.regions ?? [])].join('、')}
+        </li>
+      )}
+      {provider.data.vendor.clientSupport && provider.data.vendor.clientSupport.length > 0 && (
+        <li>客户端：官方信息显示支持 {provider.data.vendor.clientSupport.join('、')}</li>
+      )}
+      {provider.data.vendor.support && provider.data.vendor.support.length > 0 && (
+        <li>支持渠道：{provider.data.vendor.support.join('、')}</li>
+      )}
+    </ul>
+    {provider.data.vendor.pricing && provider.data.vendor.pricing.length > 0 && (
+      <>
+        <h3>套餐与流量</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>套餐</th>
+              <th>价格</th>
+              <th>计费周期</th>
+              <th>流量额度</th>
+            </tr>
+          </thead>
+          <tbody>
+            {provider.data.vendor.pricing.map((plan) => (
+              <tr>
+                <td>{plan.name}</td>
+                <td>{plan.price}</td>
+                <td>{plan.billingCycle ?? '—'}</td>
+                <td>{plan.trafficQuota ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p class="hero__clarify">以上套餐信息来自官方公开资料，具体以官网当前信息为准。</p>
+      </>
+    )}
+  </div>
+
+  {providerTests.length > 0 && (
+    <>
+      <h2>本站测试</h2>
+      <div class="info-panel info-panel--in-house">
+      <SourceBadge type="in-house" />
+      {providerTests.map((test) => (
+        <div class="test-record">
+          <p>测试日期：{formatDate(test.data.date)}</p>
+          <p>测试方法：{test.data.methodology}</p>
+          <dl>
+            <dt>测试地区</dt>
+            <dd>{test.data.environment.location}</dd>
+            <dt>测试网络</dt>
+            <dd>{test.data.environment.network}</dd>
+            <dt>测试客户端</dt>
+            <dd>{test.data.environment.client}</dd>
+            <dt>测试协议</dt>
+            <dd>{test.data.environment.protocol}</dd>
+            {test.data.results?.downloadMbps !== undefined && (
+              <>
+                <dt>下载速度</dt>
+                <dd>{test.data.results.downloadMbps} Mbps</dd>
+              </>
+            )}
+            {test.data.results?.uploadMbps !== undefined && (
+              <>
+                <dt>上传速度</dt>
+                <dd>{test.data.results.uploadMbps} Mbps</dd>
+              </>
+            )}
+            {test.data.results?.latencyMs !== undefined && (
+              <>
+                <dt>延迟</dt>
+                <dd>{test.data.results.latencyMs} ms</dd>
+              </>
+            )}
+            {test.data.results?.packetLossPercent !== undefined && (
+              <>
+                <dt>丢包率</dt>
+                <dd>{test.data.results.packetLossPercent}%</dd>
+              </>
+            )}
+            {test.data.results?.stabilityScore !== undefined && (
+              <>
+                <dt>稳定性评分</dt>
+                <dd>{test.data.results.stabilityScore}</dd>
+              </>
+            )}
+          </dl>
+          {test.data.results?.streaming && test.data.results.streaming.length > 0 && (
+            <p>
+              流媒体解锁：
+              {test.data.results.streaming
+                .map((item) => `${item.platform}（${item.unlocked ? '已解锁' : '未解锁'}）`)
+                .join('、')}
+            </p>
+          )}
+          {test.data.results?.aiServicesAccess && test.data.results.aiServicesAccess.length > 0 && (
+            <p>
+              AI 服务可用性：
+              {test.data.results.aiServicesAccess
+                .map((item) => `${item.service}（${item.accessible ? '可访问' : '不可访问'}）`)
+                .join('、')}
+            </p>
+          )}
+          {test.data.notes && <p>备注：{test.data.notes}</p>}
+        </div>
+      ))}
+      </div>
+    </>
+  )}
+
+  {hasEditorial && (
+    <>
+      <h2>编辑结论</h2>
+      <div class="info-panel info-panel--editorial">
+      <SourceBadge type="editorial" />
+      <p>{provider.data.editorial.summary}</p>
+      {provider.data.editorial.pros.length > 0 && (
+        <>
+          <h3>优点</h3>
+          <ul>
+            {provider.data.editorial.pros.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      {provider.data.editorial.cons.length > 0 && (
+        <>
+          <h3>缺点</h3>
+          <ul>
+            {provider.data.editorial.cons.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      {provider.data.editorial.suitableFor.length > 0 && (
+        <>
+          <h3>适合人群</h3>
+          <ul>
+            {provider.data.editorial.suitableFor.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      {provider.data.editorial.notSuitableFor.length > 0 && (
+        <>
+          <h3>不适合人群</h3>
+          <ul>
+            {provider.data.editorial.notSuitableFor.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      </div>
+    </>
+  )}
+
+  {provider.data.thirdPartyNotes && provider.data.thirdPartyNotes.length > 0 && (
+    <>
+      <h2>第三方资料</h2>
+      <div class="info-panel info-panel--third-party">
+      <SourceBadge type="third-party" />
+      <ul class="note-list">
+        {provider.data.thirdPartyNotes.map((note) => (
+          <li>
+            <p class="note-list__source">{note.source} · {formatDate(note.date)}</p>
+            <p class="note-list__claim">{note.claim}</p>
+          </li>
+        ))}
+      </ul>
+      </div>
+    </>
+  )}
+
+  {providerRankings.length > 0 && (
+    <>
+      <h2>相关榜单</h2>
+      <p>入选：</p>
+      <ul class="quick-links">
+        {providerRankings.map((ranking) => (
+          <li>
+            {/* "overall" 综合推荐榜的数据 slug 是 "overall"，但页面 URL 就是 /rankings/ 本身，
+               不存在 /rankings/overall/ 页面，这里需要特判，避免生成死链。 */}
+            <a href={ranking.id === 'overall' ? '/rankings/' : `/rankings/${ranking.id}/`}>{ranking.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  {providerComparisons.length > 0 && (
+    <>
+      <h2>相关对比</h2>
+      <ul class="quick-links">
+        {providerComparisons.map((comparison) => (
+          <li>
+            <a href={`/comparisons/${comparison.id}/`}>{comparison.id}</a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  {relatedArticles.length > 0 && (
+    <>
+      <h2>相关内容</h2>
+      <ul class="quick-links">
+        {relatedArticles.map((article) => (
+          <li>
+            <a href={getArticleHref(article)}>{article.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  {brandArticle && (
+    <p>
+      想更系统地了解 {provider.data.name} 目前公开可查的套餐、协议与测速资料，可以看
+      <a href={getArticleHref(brandArticle)}>{brandArticle.data.title}</a>
+      这篇资料整理文章。
+    </p>
+  )}
+
+  <p>你可能还想看：</p>
+  <ul class="quick-links">
+    <li><a href="/airports/">查看更多机场导航</a></li>
+    <li><a href="/rankings/">查看机场推荐</a></li>
+    <li><a href="/reviews/">了解评测方法</a></li>
+    <li><a href="/knowledge/">机场代理知识</a></li>
+    <li><a href="/tutorials/">机场教程</a></li>
+  </ul>
+
+  <p>本页最后更新于 {formatDate(lastUpdated)}。信息按来源分为官方公开信息、本站实测、第三方资料与编辑观点，分别标注。</p>
+
+  <script type="application/ld+json" set:html={JSON.stringify(webPageJsonLd)} />
+</BaseLayout>
