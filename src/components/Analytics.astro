@@ -38,14 +38,31 @@ const { siteId, ga4MeasurementId, cloudflareBeaconToken, zztoolsSiteId } = analy
 }
 
 <script define:vars={{ siteId }}>
+  // 站内自建计数器（/api/track，见 functions/api/track.js）：不依赖 GA4/Cloudflare
+  // 是否配置了真实 ID，部署后立刻可用，用于 /internal-stats 面板展示浏览量与点击量。
+  // 用 sendBeacon 保证页面跳转/关闭时请求仍能发出去，且不阻塞页面。
+  function sendToInternalStats(type, extra) {
+    try {
+      const payload = JSON.stringify({ type, path: location.pathname, ...extra });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/track', payload);
+      } else {
+        fetch('/api/track', { method: 'POST', body: payload, keepalive: true });
+      }
+    } catch (e) {
+      // 站内计数器不应该影响页面正常使用，任何异常都静默忽略。
+    }
+  }
+
   // 通用推荐位/CTA 点击追踪：不绑定某一个具体统计平台，只要页面上有
   // data-analytics-event 属性的元素被点击，就统一上报"站点 + 页面 + 品牌 + CTA"
   // 四个维度。以后新增统计工具，只需要在这一处再 push 一次，不用改各页面模板。
   function report(eventName, el) {
+    const providerSlug = el.getAttribute('data-provider') || '';
     const payload = {
       site: siteId,
       page_path: location.pathname,
-      provider_slug: el.getAttribute('data-provider') || '',
+      provider_slug: providerSlug,
       provider_name: el.getAttribute('data-provider-name') || '',
       cta_label: el.getAttribute('data-cta-label') || (el.textContent || '').trim().slice(0, 60),
       outbound_url: el.tagName === 'A' ? el.href : '',
@@ -55,7 +72,15 @@ const { siteId, ga4MeasurementId, cloudflareBeaconToken, zztoolsSiteId } = analy
     }
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({ event: eventName, ...payload });
+
+    // 曝光事件（recommendation_card_impression）不计入点击量统计，
+    // 只有真正的点击（含点击型 CTA 与外链兜底点击）才上报站内计数器。
+    if (eventName !== 'recommendation_card_impression') {
+      sendToInternalStats('click', { provider: providerSlug });
+    }
   }
+
+  sendToInternalStats('pageview');
 
   document.addEventListener(
     'click',

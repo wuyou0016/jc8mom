@@ -1,1 +1,136 @@
-[]
+[
+  {
+    "slug": "overall",
+    "title": "机场综合推荐榜",
+    "description": "本站综合推荐榜，人工指定排序（当前尚无本站测速数据支撑自动计算，因此全部条目均为编辑指定排名，而非算法计算结果）。",
+    "methodology": "本榜单为人工编辑排名（rankOverride），不是基于本站测速数据的自动计算结果——本站目前尚未开始对这些品牌积累测试数据（tests 数据集为空）。第 1-8 位是站长根据自身判断（含资料透明度、合作优先级等因素）指定的顺序；第 9-20 位是在收录的第三方导航站品牌库中按资料完整度（已核实/第三方资料 优先于 资料待核验）补充收录，具体排序不代表额外的推荐强度差异。所有 Provider 的厂商信息均整理自第三方资料（主要来源：买梯子导航 maitizi.com），标注为第三方资料的内容均未经本站独立核实，请以各品牌官网结算页面实际显示为准。",
+    "criteria": [
+      { "key": "editorial", "label": "编辑指定排名", "weight": 1, "description": "本站编辑基于资料透明度、可信度与业务优先级人工排序，非自动计算得分。" }
+    ],
+    "scoringVersion": "v1.0-editorial-override",
+    "snapshotAt": "2026-09-25",
+    "updatedAt": "2026-09-25",
+    "entries": [
+      {
+        "providerId": "wuyou-lianjie",
+        "reason": "本站综合首选合作品牌，套餐资料公开透明、入门门槛低，页面呈现权重最高。",
+        "rankOverride": 1,
+        "rankOverrideReason": "站长指定为本站首选推荐，着重突出展示地位。"
+      },
+      {
+        "providerId": "weifeng-network",
+        "reason": "站长指定综合榜第2位。",
+        "rankOverride": 2,
+        "rankOverrideReason": "站长指定顺序。"
+      },
+      {
+        "providerId": "firefly",
+        "reason": "价格信息被两个独立第三方来源互相印证，可信度相对较高，站长指定综合榜第3位。",
+        "rankOverride": 3,
+        "rankOverrideReason": "站长指定顺序。"
+      },
+      {
+        "providerId": "feimao-cloud",
+        "reason": "入门套餐价格与协议信息被两个独立来源印证，站长指定综合榜第4位。",
+        "rankOverride": 4,
+        "rankOverrideReason": "站长指定顺序。"
+      },
+      {
+        "providerId": "guangsu-cloud",
+        "reason": "老牌综合型机场，站长指定综合榜第5位。",
+        "rankOverride": 5,
+        "rankOverrideReason": "站长指定顺序。"
+      },
+      {
+        "providerId": "xingdaomeng",
+        "reason": "站长指定综合榜第6位（目前公开资料有限，具体套餐待自行核实）。",
+        "rankOverride": 6,
+        "rankOverrideReason": "站长指定顺序。"
+      },
+      {
+        "providerId": "sogo-cloud",
+        "reason": "站长指定综合榜第7位（目前公开资料有限，具体套餐待自行核实）。",
+        "rankOverride": 7,
+        "rankOverrideReason": "站长指定顺序。"
+      },
+      {
+        "providerId": "twilight",
+        "reason": "站长指定综合榜第8位（目前公开资料有限，具体套餐待自行核实）。",
+        "rankOverride": 8,
+        "rankOverrideReason": "站长指定顺序。"
+      },
+      {
+        "providerId": "yuzhou-cloud",
+        "reason": "第三方资料显示节点数量较多、套餐不限时，收录进补充名单。",
+        "rankOverride": 9,
+        "rankOverrideReason": "按资料完整度（第三方资料）从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "lingmao-network",
+        "reason": "价格资料相对明确，但协议描述存在来源间矛盾，收录进补充名单。",
+        "rankOverride": 10,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "kuaili",
+        "reason": "面向极客/外贸等专业用户群体（第三方资料说法），收录进补充名单。",
+        "rankOverride": 11,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "shanyue",
+        "reason": "节点覆盖地区资料相对具体，收录进补充名单。",
+        "rankOverride": 12,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "kuajie-cloud",
+        "reason": "价格资料存在来源间分歧，收录进补充名单以保持收录范围完整。",
+        "rankOverride": 13,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "flyv",
+        "reason": "目前仅确认官网入口可用，收录进补充名单。",
+        "rankOverride": 14,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "u1s1",
+        "reason": "目前仅确认官网入口可用，收录进补充名单。",
+        "rankOverride": 15,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "jilian-cloud",
+        "reason": "目前仅确认官网入口可用，收录进补充名单。",
+        "rankOverride": 16,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "laddercloud",
+        "reason": "目前仅确认官网入口可用，收录进补充名单。",
+        "rankOverride": 17,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "ermao-cloud",
+        "reason": "目前仅确认官网入口可用，收录进补充名单。",
+        "rankOverride": 18,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "guangnian-ladder",
+        "reason": "目前仅确认官网入口可用，收录进补充名单。",
+        "rankOverride": 19,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      },
+      {
+        "providerId": "lingdong-cloud",
+        "reason": "目前仅确认官网入口可用，收录进补充名单。",
+        "rankOverride": 20,
+        "rankOverrideReason": "按资料完整度从品牌库补充收录，排名不代表额外推荐强度。"
+      }
+    ]
+  }
+]

@@ -161,6 +161,8 @@ SEO 的第一优先级**不是关键词数量**，而是：
 
 只有当未来实际需求证明必要时才考虑引入。
 
+**例外说明**：`functions/api/track.js`、`functions/api/stats-summary.js` 使用了 Cloudflare Pages Functions + KV Namespace（`STATS_KV`）实现站内浏览量/点击量计数器（详见 [docs/stats-feature.md](../docs/stats-feature.md)）。这是"数据库"原则下的一次明确例外，原因是：(1) 站长明确要求了站内可查看的统计面板，不是提前预判的需求；(2) KV 是 Cloudflare Pages 原生能力，不引入额外第三方依赖，且免费额度内完全够用，符合"优先平台原生能力"的精神。除此之外，不应该再以类似理由引入其他数据库或后端服务。
+
 ---
 
 ## 8. 静态网站原则

@@ -1,0 +1,231 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// 站内数据面板：读取 /api/stats-summary（Cloudflare Pages Function + KV）。
+// 不加入导航、不做站内链接，且 robots 全部禁止收录/跟随，避免被搜索引擎索引。
+// 这只是"不主动暴露"，不是访问控制——真正要限制只有你自己能打开，需要在
+// Cloudflare Zero Trust（Access）里为 /internal-stats 单独配置访问规则，
+// 那一步在 Cloudflare Dashboard 完成，不是本页面代码能替你做的。
+---
+
+<BaseLayout title="站内数据面板" description="内部使用的浏览量与点击量统计面板。" robots={{ index: false, follow: false, noarchive: true }}>
+  <main class="stats-page">
+    <header class="stats-page__header">
+      <h1>站内数据面板</h1>
+      <p class="stats-page__hint">
+        数据来自 <code>/api/track</code> 自建计数器（Cloudflare KV），不依赖 GA4/Cloudflare Web Analytics 是否配置。
+        部署后需要在 Cloudflare Pages 项目设置里绑定名为 <code>STATS_KV</code> 的 KV Namespace，否则下面会显示加载失败。
+      </p>
+    </header>
+
+    <div id="stats-status" class="stats-status">正在加载…</div>
+
+    <section class="stats-grid" id="stats-totals" hidden>
+      <div class="stat-card">
+        <span class="stat-card__label">累计浏览量（PV）</span>
+        <span class="stat-card__value" id="stat-total-pv">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">累计点击量（CTA / 外链）</span>
+        <span class="stat-card__value" id="stat-total-click">—</span>
+      </div>
+    </section>
+
+    <section class="stats-tables" id="stats-tables" hidden>
+      <div class="stats-table-card">
+        <h2>页面浏览量排行</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>页面路径</th>
+              <th>浏览量</th>
+            </tr>
+          </thead>
+          <tbody id="table-pages"></tbody>
+        </table>
+      </div>
+
+      <div class="stats-table-card">
+        <h2>品牌点击量排行</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>品牌（provider slug）</th>
+              <th>点击量</th>
+            </tr>
+          </thead>
+          <tbody id="table-providers"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="stats-page__generated" id="stats-generated"></p>
+  </main>
+</BaseLayout>
+
+<style>
+  .stats-page {
+    max-width: 64rem;
+    margin: 0 auto;
+    padding: var(--space-12) var(--page-gutter) var(--space-16);
+  }
+
+  .stats-page__header h1 {
+    font-size: 1.75rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .stats-page__hint {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    line-height: var(--line-height-base);
+  }
+
+  .stats-page__hint code {
+    background: var(--color-surface-soft);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85em;
+  }
+
+  .stats-status {
+    margin: var(--space-6) 0;
+    color: var(--color-muted);
+  }
+
+  .stats-status[data-state='error'] {
+    color: var(--color-warning);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: var(--space-4);
+    margin: var(--space-6) 0;
+  }
+
+  .stat-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .stat-card__label {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+  }
+
+  .stat-card__value {
+    font-size: 2rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .stats-tables {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+  }
+
+  .stats-table-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stats-table-card h2 {
+    font-size: 1.05rem;
+    margin-bottom: var(--space-4);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  th {
+    color: var(--color-muted);
+    font-weight: 500;
+  }
+
+  td:last-child,
+  th:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stats-page__generated {
+    margin-top: var(--space-6);
+    color: var(--color-muted);
+    font-size: 0.8rem;
+  }
+</style>
+
+<script>
+  async function loadStats() {
+    const statusEl = document.getElementById('stats-status');
+    const totalsEl = document.getElementById('stats-totals');
+    const tablesEl = document.getElementById('stats-tables');
+    const generatedEl = document.getElementById('stats-generated');
+
+    try {
+      const res = await fetch('/api/stats-summary', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'unknown error');
+
+      document.getElementById('stat-total-pv').textContent = data.totalPageviews.toLocaleString('zh-CN');
+      document.getElementById('stat-total-click').textContent = data.totalClicks.toLocaleString('zh-CN');
+
+      const pagesBody = document.getElementById('table-pages');
+      pagesBody.innerHTML = data.topPages.length
+        ? data.topPages
+            .map((row) => `<tr><td>${escapeHtml(row.name)}</td><td>${row.count.toLocaleString('zh-CN')}</td></tr>`)
+            .join('')
+        : '<tr><td colspan="2">暂无数据</td></tr>';
+
+      const providersBody = document.getElementById('table-providers');
+      providersBody.innerHTML = data.topProviders.length
+        ? data.topProviders
+            .map((row) => `<tr><td>${escapeHtml(row.name)}</td><td>${row.count.toLocaleString('zh-CN')}</td></tr>`)
+            .join('')
+        : '<tr><td colspan="2">暂无数据</td></tr>';
+
+      generatedEl.textContent = `数据生成时间：${new Date(data.generatedAt).toLocaleString('zh-CN')}`;
+
+      statusEl.hidden = true;
+      totalsEl.hidden = false;
+      tablesEl.hidden = false;
+    } catch (err) {
+      statusEl.dataset.state = 'error';
+      statusEl.textContent = `加载失败：${err instanceof Error ? err.message : String(err)}（请确认 Cloudflare Pages 项目已绑定 STATS_KV）`;
+    }
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value;
+    return div.innerHTML;
+  }
+
+  loadStats();
+</script>

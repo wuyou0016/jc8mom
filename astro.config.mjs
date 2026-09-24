@@ -8,6 +8,7 @@ import sitemap from '@astrojs/sitemap';
 // - 排除任何路径片段命中 demo/mock 关键词的 URL（开发占位数据的防御性兜底，
 //   正式发布门槛应在页面生成阶段就不产出这些路径，这里是第二道防线）
 // - 排除分页类路径（/page/ 或 ?page=），除非该分页本身是独立有价值的 canonical 页面
+// - 排除 /internal-stats（站内数据面板，robots noindex，不应出现在 sitemap 里）
 /** @param {string} pageUrl @returns {boolean} */
 function isSitemapExcluded(pageUrl) {
   const url = new URL(pageUrl);
@@ -22,6 +23,9 @@ function isSitemapExcluded(pageUrl) {
     return true;
   }
   if (/\/page\/\d+\/?$/.test(url.pathname)) {
+    return true;
+  }
+  if (url.pathname === '/internal-stats' || url.pathname === '/internal-stats/') {
     return true;
   }
   return false;
