@@ -8,7 +8,7 @@
       "officialWebsite": "https://vip02.worryfreeaff.com/#/?code=XT1WDPvr",
       "description": "套餐价格公开透明，从入门 MINI 档到中大流量的舒心、省心档设计清晰，不需要注册账号即可大致了解产品定位。跳转链接采用站长在 rocketjichang.com 项目中已使用的官方入口地址。",
       "pricing": [
-        { "name": "MINI", "price": "¥79/年", "billingCycle": "yearly", "trafficQuota": "40GB/月" },
+        { "name": "MINI", "price": "¥6.6/月", "billingCycle": "yearly", "trafficQuota": "40GB/月" },
         { "name": "舒心", "price": "¥19/月起", "billingCycle": "monthly", "trafficQuota": "100GB" },
         { "name": "省心", "price": "¥33/月起", "billingCycle": "monthly", "trafficQuota": "200GB" }
       ],
