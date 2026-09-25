@@ -25,3 +25,8 @@ pnpm-debug.log*
 
 # Claude Code local-machine settings (per-machine tool permissions, not project config)
 .claude/settings.local.json
+
+
+# Cloudflare Wrangler 本地构建缓存（每次 wrangler pages dev/deploy 都会
+# 重新生成，不应该进版本库）
+.wrangler/

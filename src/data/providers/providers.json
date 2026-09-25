@@ -67,39 +67,43 @@
     "status": "active",
     "vendor": {
       "officialWebsite": "https://wep01.breezenetaff.com/#/?code=XzOO248D",
-      "description": "第三方资料显示微风网络定位入门级专线机场，宣称采用 IEPL 专线。官网入口需先注册账号，本站未独立核实具体套餐与节点信息。",
-      "pricing": [{ "name": "入门套餐", "price": "约¥11/月起", "billingCycle": "yearly", "trafficQuota": "100GB" }],
+      "description": "微风网络定位入门级专线机场，采用 IEPL 专线。乘风档月付价格由站长直接确认为¥27/月（200GB）；官网入口需先注册账号，本站未独立核实节点等其他细节。",
+      "pricing": [{ "name": "乘风", "price": "¥27/月", "billingCycle": "monthly", "trafficQuota": "200GB" }],
       "routes": ["IEPL（第三方资料）"],
       "regions": ["香港", "新加坡", "日本", "美国"],
       "source": {
-        "type": "third-party",
-        "sourceUrl": "https://maitizi.com/weifeng",
+        "type": "editorial",
         "retrievedAt": "2026-09-25",
-        "claim": "定位、价格与线路来自第三方资料转述，官网需注册账号，本站未创建账号核实"
+        "claim": "乘风档¥27/月/200GB价格由站长直接确认，与此前'机场YYDS'第三方资料记录的数字一致；定位与线路信息仍来自第三方资料转述，官网需注册账号，本站未创建账号核实"
       }
     },
     "thirdPartyNotes": [
       {
         "source": "买梯子导航 maitizi.com",
         "sourceUrl": "https://maitizi.com/weifeng",
-        "claim": "测速数据标注为'整理中'，暂无具体数字；流媒体/AI解锁描述在多个服务商页面间高度相似，提示可能存在模板化内容",
+        "claim": "该来源记录的是另一档入门套餐（约¥11/月起，100GB），与站长确认的乘风档（27元/200GB）覆盖的是不同档位，不是互相矛盾的同一档位",
+        "date": "2026-09-25"
+      },
+      {
+        "source": "机场YYDS（历史资料，本站早期项目记录）",
+        "claim": "乘风档 200GB/27元/月，与站长提供的套餐资料一致",
         "date": "2026-09-25"
       }
     ],
     "editorial": {
-      "pros": ["定位清晰，主打 IEPL 专线"],
+      "pros": ["价格已由站长直接确认（¥27/月，乘风档200GB），不再是单一第三方猜测", "定位清晰，主打 IEPL 专线"],
       "cons": [
-        "官网需先注册账号才能查看套餐，门槛高于本站首选",
+        "官网需先注册账号才能查看套餐详情页，门槛高于本站首选",
         "第三方资料本身标注测速数据'整理中'，暂无可参考数字",
         "流媒体/AI 解锁描述与其他服务商页面高度相似，可信度存疑"
       ],
-      "suitableFor": ["愿意先注册账号再自行核实套餐细节的用户"],
-      "notSuitableFor": ["希望不注册就能提前了解价格的用户"],
-      "summary": "微风网络的公开资料有限，核心卖点（IEPL 专线、价格）均来自未经独立核实的第三方转述，建议购买前直接与客服确认套餐详情。",
+      "suitableFor": ["愿意先注册账号再自行核实其他细节的用户"],
+      "notSuitableFor": ["需要测速数据支撑才决定购买的用户"],
+      "summary": "微风网络的乘风档价格（¥27/月，200GB）已经站长确认，不再是未经核实的第三方猜测；但节点、测速这些细节仍缺资料支撑，购买前建议先注册确认其他条款。",
       "source": {
         "type": "editorial",
         "retrievedAt": "2026-09-25",
-        "claim": "本站基于第三方资料整理后的编辑判断"
+        "claim": "价格部分为站长直接确认；其余判断基于第三方资料整理"
       }
     },
     "lastVerified": "2026-09-25",

@@ -28,9 +28,8 @@ const priceComparison: Array<{ slug: string; name: string; notes: string[] }> = 
     slug: 'weifeng-network',
     name: '微风网络',
     notes: [
-      '「机场Clash」资料：约 11 元/月起（年付），100GB',
-      '「机场YYDS」资料：乘风 200GB/27 元/月（与站长提供的套餐资料一致）',
-      '两个来源覆盖的档位不同，暂无法直接比较起步价',
+      '乘风档 200GB/27 元/月——站长直接确认的价格，与历史「机场YYDS」资料记录的数字一致',
+      '另有第三方资料显示约 11 元/月起（年付）、100GB 的入门档，与乘风档大概率是不同套餐档位，不是互相矛盾的同一档位',
     ],
   },
   {
@@ -91,7 +90,13 @@ const budgetTiers = [
     providers: [
       { slug: 'firefly', name: 'Firefly', price: '约 ¥8/月起（第三方资料，多来源一致）' },
       { slug: 'shanyue', name: '闪跃', price: '约 ¥8/月起（第三方资料，多来源一致）' },
-      { slug: 'weifeng-network', name: '微风网络', price: '约 ¥11/月起（第三方资料，单一来源）' },
+    ],
+  },
+  {
+    label: '¥20 元/月以上',
+    hint: '流量档位更大，适合用量较多、不想频繁加购流量包的用户',
+    providers: [
+      { slug: 'weifeng-network', name: '微风网络', price: '¥27/月·200GB（乘风档，站长确认）' },
     ],
   },
 ];
