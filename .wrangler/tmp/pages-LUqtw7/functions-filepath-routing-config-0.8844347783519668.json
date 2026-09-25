@@ -1,0 +1,29 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/stats-summary",
+      "mountPath": "/api",
+      "method": "GET",
+      "module": [
+        "api/stats-summary.js:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/track",
+      "mountPath": "/api",
+      "method": "GET",
+      "module": [
+        "api/track.js:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/track",
+      "mountPath": "/api",
+      "method": "POST",
+      "module": [
+        "api/track.js:onRequestPost"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}

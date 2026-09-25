@@ -1138,9 +1138,11 @@ td {
   margin-top: var(--space-8);
 }
 
+/* 3 项真实指标（去掉了编造的"用户信赖"那第4项）：小屏沿用两列（第3项
+   自动换到第二行居左），宽屏切三等分，不再是原来给4项设计的两列/四列。 */
 @media (min-width: 64rem) {
   .stat-strip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

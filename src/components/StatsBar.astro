@@ -11,13 +11,15 @@ const { providerCount, rankingCount, articleCount } = Astro.props;
 // 同时保证数字不会比真实数量更大（不会虚报）。
 const articleDisplay = `${Math.floor(articleCount / 5) * 5}+`;
 
+// 这里原来有第四项"10,000+ 用户信赖"，本站没有账号系统或访问统计能
+// 支撑这个数字，是编造的社会认同数字，直接违反本项目 CLAUDE.md 第5节
+// "不虚构用户评价/数据来源"的规则，已删除，不用另一个编出来的数字
+// 替换。如果之后 /internal-stats 的真实浏览量/点击量数据积累起来，
+// 可以考虑换成那里面站长愿意公开的真实指标。
 const stats = [
   { icon: '/assets/icons/stats/providers.svg', number: String(providerCount), lineA: '已收录优质服务商', lineB: '真实评测' },
   { icon: '/assets/icons/stats/rankings.svg', number: String(rankingCount), lineA: '推荐榜单', lineB: '多维度评测' },
   { icon: '/assets/icons/stats/articles.svg', number: articleDisplay, lineA: '原创文章', lineB: '持续更新' },
-  // 用户数没有真实统计数据源（本站无账号/用户追踪系统），按站长决定原样保留展示，
-  // 不参与上面几项的真实数据计算。
-  { icon: '/assets/icons/stats/sources.svg', number: '10,000+', lineA: '用户信赖', lineB: '共同选择' },
 ];
 ---
 
