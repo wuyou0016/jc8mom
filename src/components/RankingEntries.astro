@@ -23,10 +23,17 @@ function daysTracked(trackedSince: string): number {
     <ol class="ranking-list">
       {entries.map((entry) => (
         <li class={`ranking-list__item${entry.finalRank === 1 ? ' ranking-list__item--top' : ''}`}>
+          {entry.finalRank === 1 && (
+            <div class="ranking-list__top-banner">
+              <span class="ranking-list__top-badge">👑 站群统一首推 · 综合第一名</span>
+              <span class="ranking-list__top-pill">低至 ¥6.6/月（MINI档）</span>
+              <span class="ranking-list__top-pill">全协议支持 · 资费全公开</span>
+            </div>
+          )}
           <div class="ranking-list__header">
             <span class="ranking-list__rank">
               <span class="sr-only">第</span>
-              {entry.finalRank}
+              {entry.finalRank === 1 ? '👑' : entry.finalRank}
               <span class="sr-only">名</span>
             </span>
             <a
@@ -79,6 +86,46 @@ function daysTracked(trackedSince: string): number {
 }
 
 <style>
+  .ranking-list__top-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ranking-list__top-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+  }
+
+  .ranking-list__top-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  :root[data-theme='dark'] .ranking-list__top-pill {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
   .ranking-list__tracked {
     margin-left: auto;
     flex-shrink: 0;

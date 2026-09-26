@@ -32,7 +32,13 @@ const [top, ...rest] = entries;
               {top.providerName}
             </a>
           </span>
-          <span class="rec-tag">推荐</span>
+          <span class="rec-tag rec-tag--gold">👑 站群统一首推</span>
+        </div>
+
+        <div class="hero__pick-badges">
+          <span class="hero__pick-pill">🥇 综合第一</span>
+          <span class="hero__pick-pill">低至 ¥6.6/月（MINI档）</span>
+          <span class="hero__pick-pill">资费全公开</span>
         </div>
 
         {HOMEPAGE_HIGHLIGHTS[top.providerId] && (
@@ -77,3 +83,36 @@ const [top, ...rest] = entries;
     </div>
   )
 }
+
+<style>
+  .rec-tag--gold {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+  }
+  .hero__pick-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin: 0.5rem 0;
+  }
+  .hero__pick-pill {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  :root[data-theme='dark'] .hero__pick-pill {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+</style>
+
