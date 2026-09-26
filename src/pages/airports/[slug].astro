@@ -91,7 +91,7 @@ const description = `${provider.data.name}的机场代理服务商信息${
   descriptionExtras.length > 0 ? `，整理了${descriptionExtras.join('、')}` : ''
 }。`;
 
-const title = `${provider.data.name}怎么样？机场代理评测与使用指南｜机场吧`;
+const title = `${provider.data.name}怎么样？机场代理评测与使用指南｜翻机场`;
 const h1 = `${provider.data.name}｜机场代理服务商评测`;
 
 const canonicalUrl = resolveCanonicalUrl(`/airports/${provider.data.slug}/`);
@@ -99,6 +99,8 @@ const canonicalUrl = resolveCanonicalUrl(`/airports/${provider.data.slug}/`);
 // dateModified 取"真正影响页面可见内容"的最新时间，不用构建时间代替。
 const lastUpdatedCandidates = [provider.data.updatedAt, ...(providerReview ? [providerReview.data.updatedAt] : [])];
 const lastUpdated = new Date(Math.max(...lastUpdatedCandidates.map((d) => new Date(d).getTime())));
+
+const isWuyou = provider.data.slug === 'wuyou-lianjie';
 
 const webPageJsonLd = {
   '@context': 'https://schema.org',
@@ -118,6 +120,64 @@ const webPageJsonLd = {
   />
 
   <h1>{h1}</h1>
+
+  {
+    isWuyou ? (
+      <div class="official-cta-banner official-cta-banner--wuyou">
+        <div class="official-cta-banner__badges">
+          <span class="official-pill official-pill--gold">👑 站群统一首推 · 综合第一名</span>
+          <span class="official-pill official-pill--verified">✓ 官方正品直达通道</span>
+          <span class="official-pill official-pill--price">低至 ¥6.6/月（MINI档）</span>
+        </div>
+        <div class="official-cta-banner__content">
+          <div class="official-cta-banner__info">
+            <div class="official-cta-banner__title">无忧链接（Wuyou Link）官网快捷通道</div>
+            <p class="official-cta-banner__desc">
+              全自研高可用架构 · 4K秒开不卡顿 · 节点全天候稳定在线 · 支持全平台客户端一键导入
+            </p>
+          </div>
+          <a
+            href={provider.data.vendor.officialWebsite}
+            rel="nofollow noopener"
+            target="_blank"
+            class="official-cta-button official-cta-button--wuyou"
+            data-analytics-event="outbound_cta_click"
+            data-provider={provider.data.slug}
+            data-provider-name={provider.data.name}
+            data-cta-label="无忧链接官网直达"
+          >
+            <span>立即直达无忧链接官网</span>
+            <span class="official-cta-button__arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    ) : (
+      <div class="official-cta-banner">
+        <div class="official-cta-banner__badges">
+          <span class="official-pill official-pill--verified">✓ 官方直达通道</span>
+        </div>
+        <div class="official-cta-banner__content">
+          <div class="official-cta-banner__info">
+            <div class="official-cta-banner__title">访问 {provider.data.name} 官方网站</div>
+            <p class="official-cta-banner__desc">直达服务商官方注册、套餐选购与用户控制中心</p>
+          </div>
+          <a
+            href={provider.data.vendor.officialWebsite}
+            rel="nofollow noopener"
+            target="_blank"
+            class="official-cta-button"
+            data-analytics-event="outbound_cta_click"
+            data-provider={provider.data.slug}
+            data-provider-name={provider.data.name}
+            data-cta-label="访问官网"
+          >
+            <span>前往 {provider.data.name} 官网</span>
+            <span class="official-cta-button__arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   <dl class="quick-facts">
     <div>
@@ -147,19 +207,19 @@ const webPageJsonLd = {
     <SourceBadge type="vendor" />
     <p>{provider.data.vendor.description}</p>
     <ul>
-      <li>
-        官网：
+      <li class="vendor-website-row">
+        <strong>官网链接：</strong>
         <a
           href={provider.data.vendor.officialWebsite}
           rel="nofollow noopener"
           target="_blank"
-          class="outbound-link"
+          class={isWuyou ? "outbound-badge-link outbound-badge-link--wuyou" : "outbound-badge-link"}
           data-analytics-event="outbound_cta_click"
           data-provider={provider.data.slug}
           data-provider-name={provider.data.name}
           data-cta-label="访问官网"
         >
-          访问 {provider.data.name} 官网<span class="outbound-link__icon" aria-hidden="true">↗</span>
+          {isWuyou ? "👑 访问无忧链接官方网站 ↗" : `访问 ${provider.data.name} 官网 ↗`}
         </a>
       </li>
       {provider.data.vendor.traffic && <li>流量：官方信息显示为 {provider.data.vendor.traffic}</li>}
