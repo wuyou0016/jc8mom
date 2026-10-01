@@ -230,7 +230,7 @@
     "name": "星岛梦",
     "status": "active",
     "vendor": {
-      "officialWebsite": "https://kfccbb.xingdaomeng.com/#/?code=yyH19CtQ",
+      "officialWebsite": "https://kfccbb.xingdaomeng.com/#/?code=Lf6mYp3u",
       "description": "第三方资料显示星岛梦为运营多年的老牌机场，2020年开业，主打企业级内网专线，套餐种类较多，含不限时买断选项，支持第三方客户端订阅导入（需联系在线客服）。",
       "pricing": [{ "name": "入门套餐", "price": "约¥8/月起（年付）", "billingCycle": "yearly", "trafficQuota": "60GB" }],
       "protocols": ["Shadowsocks（第三方资料）", "Trojan（第三方资料）", "VLESS（第三方资料）"],
